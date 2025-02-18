@@ -412,6 +412,15 @@ const validateForm = () => {
             <BirdCard disabled={!isWarehouseActive} />
             <BoltCard disabled={!isWarehouseActive} />
           </>
+        ) : city === "Coimbra" ? (
+          <>
+            <BirdCard disabled={!isWarehouseActive} />
+            <BoltCard disabled={!isWarehouseActive} />
+          </>
+        ) : city === "Santarem_TorresVedras" ? (
+          <>
+            <BoltCard disabled={!isWarehouseActive} />
+          </>
         ) : null}
       </ScrollView>
 

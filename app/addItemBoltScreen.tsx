@@ -79,47 +79,70 @@ const AddItemBoltScreen: React.FC = () => {
   const handleConfirm = async () => {
     if (isLoading) return;
     setIsLoading(true);
-
+  
     const currentTime = new Date().toLocaleString("pt-PT");
     const username = (await AsyncStorage.getItem("USERNAME")) || "Desconhecido";
-    const userCity = (await AsyncStorage.getItem("CITY")) || "Desconhecido";
-
+    let userCity = (await AsyncStorage.getItem("CITY")) || "Desconhecido"; // Cidade do usuário
+  
+    // Verifica se o usuário está na cidade "Santarem_TorresVedras"
+    if (userCity === "Santarem_TorresVedras") {
+      const selectedCity = await new Promise<string | null>((resolve) => {
+        Alert.alert(
+          "Escolha a Cidade",
+          "Em qual cidade deseja adicionar a tarefa?",
+          [
+            { text: "Santarém", onPress: () => resolve("Santarém") },
+            { text: "Torres Vedras", onPress: () => resolve("Torres Vedras") },
+            { text: "Cancelar", onPress: () => resolve(null), style: "cancel" }
+          ],
+          { cancelable: false }
+        );
+      });
+  
+      if (!selectedCity) {
+        setIsLoading(false);
+        return; // Se cancelar, não adiciona a tarefa
+      }
+      
+      userCity = selectedCity; // Atualiza a cidade com a escolha do usuário
+    }
+  
     const updatedValues = { ...currentValues };
     Object.entries(adjustedCounts).forEach(([key, value]) => {
       const newValue = updatedValues[key as keyof typeof updatedValues] + value;
       updatedValues[key as keyof typeof updatedValues] = Math.max(0, newValue);
     });
-
+  
     await Promise.all(
       Object.entries(updatedValues).map(([key, value]) => AsyncStorage.setItem(`bolt_${key}`, value.toString()))
     );
-
+  
     // Salvar tasks no objeto único
     const storedTasks = await AsyncStorage.getItem("TASKS");
     const tasks = storedTasks ? JSON.parse(storedTasks) : {};
-
+  
     Object.entries(adjustedCounts).forEach(([key, value]) => {
       if (value !== 0) {
         tasks[`bolt_${key}`] = (tasks[`bolt_${key}`] || 0) + value;
       }
     });
-
+  
     await AsyncStorage.setItem("TASKS", JSON.stringify(tasks));
-
+  
     const currentLocation = await getCurrentLocation();
     if (!currentLocation) {
       Alert.alert("Erro", "Não foi possível obter a localização.");
       setIsLoading(false);
       return;
     }
-
+  
     const logs = {
       logs: Object.entries(adjustedCounts)
         .filter(([_, value]) => value !== 0)
         .map(([key, value]) => ({
           Utilizador: username,
           Data: currentTime,
-          Cidade: userCity,
+          Cidade: userCity, // Cidade correta com base na escolha do usuário
           Operador: "Bolt",
           Tarefa: formatLabel(key),
           Quantidade: value,
@@ -127,14 +150,14 @@ const AddItemBoltScreen: React.FC = () => {
           Longitude: currentLocation.longitude,
         })),
     };
-
+  
     try {
       const response = await fetch(GOOGLE_SHEETS_API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(logs),
       });
-
+  
       const result = await response.json();
       if (result.success) {
         Alert.alert("Sucesso", "Tarefa registrada com sucesso!");
@@ -146,9 +169,9 @@ const AddItemBoltScreen: React.FC = () => {
       console.error("Erro ao enviar para Google Sheets:", error);
       Alert.alert("Erro", "Não foi possível registrar a tarefa.");
     }
-
+  
     setIsLoading(false);
-  };
+  };  
 
   return (
     <LinearGradient colors={["#1A1A1A", "#2A2A2A"]} style={styles.container}>
@@ -180,6 +203,8 @@ const AddItemBoltScreen: React.FC = () => {
       <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm} disabled={isLoading}>
         {isLoading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.confirmButtonText}>Confirmar</Text>}
       </TouchableOpacity>
+
+      
     </LinearGradient>
   );
 };
@@ -272,6 +297,47 @@ const styles = StyleSheet.create({
     color: "#FFF",
     fontSize: 20,
     fontWeight: "bold",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#2A2A2A',
+    padding: 20,
+    borderRadius: 10,
+    width: '80%',
+  },
+  modalTitle: {
+    color: '#FFF',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  cityButton: {
+    backgroundColor: '#32CD32',
+    padding: 15,
+    borderRadius: 8,
+    marginVertical: 5,
+    alignItems: 'center',
+  },
+  cityButtonText: {
+    color: '#FFF',
+    fontWeight: 'bold',
+  },
+  cancelButton: {
+    backgroundColor: '#ff4444',
+    padding: 15,
+    borderRadius: 8,
+    marginTop: 10,
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    color: '#FFF',
+    fontWeight: 'bold',
   },
 });
 

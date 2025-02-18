@@ -15,37 +15,55 @@ const StartShiftScreen: React.FC = () => {
   const [vehicles, setVehicles] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFocused, setIsFocused] = useState(false);
+  const [userType, setUserType] = useState<string | null>(null); // 🔥 Novo estado
   const router = useRouter();
 
-  // Paleta de cores
   const colors = {
-    primary: '#0F1A2F',    // Azul escuro
-    secondary: '#3B82F6',  // Azul principal
-    background: '#1E293B', // Fundo escuro
-    text: '#F8FAFC'        // Texto branco
+    primary: '#0F1A2F',
+    secondary: '#3B82F6',
+    background: '#1E293B',
+    text: '#F8FAFC'
   };
 
   useEffect(() => {
-    const loadVehicles = async () => {
-      const vehicleList = await fetchVehicles();
-      if (vehicleList.length > 0) {
-        setVehicles(vehicleList);
-        setCarrinha(vehicleList[0]); // 🔹 Define o primeiro veículo como padrão
+    const loadUserData = async () => {
+      const storedUserType = await AsyncStorage.getItem("USER_TYPE");
+      setUserType(storedUserType || "driver");
+
+      if (storedUserType !== "mechanic") {
+        const vehicleList = await fetchVehicles();
+        if (vehicleList.length > 0) {
+          setVehicles(vehicleList);
+          setCarrinha(vehicleList[0]); 
+        }
       }
+
       setLoading(false);
     };
 
-    loadVehicles();
+    loadUserData();
   }, []);
 
   const handleConfirm = async () => {
+    const startTime = Date.now();
+
+    if (userType === "mechanic") {
+      // 🔥 Se for mecânico, inicia direto sem precisar de KM e Carrinha
+      await AsyncStorage.multiSet([
+        ["startTime", startTime.toString()],
+        ["isTurnActive", "true"]
+      ]);
+      router.push("/turnoHomeScreen");
+      return;
+    }
+
+    // 🔥 Se não for mecânico, faz as verificações normais
     if (!kmInicial || isNaN(parseInt(kmInicial))) {
       Alert.alert("Erro", "Por favor, insira um número válido para os KM iniciais.");
       return;
     }
 
     try {
-      const startTime = Date.now();
       await AsyncStorage.multiSet([
         ["kmInicial", kmInicial],
         ["carrinha", carrinha],
@@ -61,7 +79,6 @@ const StartShiftScreen: React.FC = () => {
   return (
     <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
       <View style={[styles.container, { backgroundColor: colors.primary }]}>
-        {/* Cabeçalho */}
         <View style={styles.header}>
           <MaterialCommunityIcons 
             name="human-scooter" 
@@ -71,53 +88,55 @@ const StartShiftScreen: React.FC = () => {
           <Text style={styles.title}>Iniciar Turno</Text>
         </View>
 
-        {/* Campo KM Inicial */}
-        <View style={[styles.inputContainer, { borderColor: isFocused ? colors.secondary : colors.background }]}>
-          <MaterialCommunityIcons 
-            name="speedometer" 
-            size={24} 
-            color={isFocused ? colors.secondary : colors.text} 
-            style={styles.icon} 
-          />
-          <TextInput
-            style={[styles.input, { color: colors.text }]}
-            placeholder="Quilometragem inicial"
-            placeholderTextColor="#64748B"
-            keyboardType="numeric"
-            value={kmInicial}
-            onChangeText={setKmInicial}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
-          />
-        </View>
-
-        {/* Seletor de Carrinha */}
-        <View style={styles.pickerWrapper}>
-          <View style={styles.pickerLabelContainer}>
-            <FontAwesome5 name="truck" size={16} color="#F8FAFC" />
-            <Text style={styles.pickerLabel}>Veículo:</Text>
-          </View>
-
-          {loading ? (
-            <ActivityIndicator size="large" color="#3B82F6" />
-          ) : (
-            <View style={styles.pickerContainer}>
-              <Picker
-                selectedValue={carrinha}
-                onValueChange={(itemValue) => setCarrinha(itemValue)}
-                dropdownIconColor="#F8FAFC"
-                mode="dropdown"
-                style={styles.picker}
-              >
-                {vehicles.map((item) => (
-                  <Picker.Item key={item} label={item} value={item} color="#F8FAFC" />
-                ))}
-              </Picker>
+        {/* 🔥 Só exibe esses campos se NÃO for mecânico */}
+        {userType !== "mechanic" && (
+          <>
+            <View style={[styles.inputContainer, { borderColor: isFocused ? colors.secondary : colors.background }]}>
+              <MaterialCommunityIcons 
+                name="speedometer" 
+                size={24} 
+                color={isFocused ? colors.secondary : colors.text} 
+                style={styles.icon} 
+              />
+              <TextInput
+                style={[styles.input, { color: colors.text }]}
+                placeholder="Quilometragem inicial"
+                placeholderTextColor="#64748B"
+                keyboardType="numeric"
+                value={kmInicial}
+                onChangeText={setKmInicial}
+                onFocus={() => setIsFocused(true)}
+                onBlur={() => setIsFocused(false)}
+              />
             </View>
-          )}
-        </View>
 
-        {/* Botão de Confirmação */}
+            <View style={styles.pickerWrapper}>
+              <View style={styles.pickerLabelContainer}>
+                <FontAwesome5 name="truck" size={16} color="#F8FAFC" />
+                <Text style={styles.pickerLabel}>Veículo:</Text>
+              </View>
+
+              {loading ? (
+                <ActivityIndicator size="large" color="#3B82F6" />
+              ) : (
+                <View style={styles.pickerContainer}>
+                  <Picker
+                    selectedValue={carrinha}
+                    onValueChange={(itemValue) => setCarrinha(itemValue)}
+                    dropdownIconColor="#F8FAFC"
+                    mode="dropdown"
+                    style={styles.picker}
+                  >
+                    {vehicles.map((item) => (
+                      <Picker.Item key={item} label={item} value={item} color="#F8FAFC" />
+                    ))}
+                  </Picker>
+                </View>
+              )}
+            </View>
+          </>
+        )}
+
         <TouchableOpacity 
           style={[styles.button, { backgroundColor: colors.secondary }]}
           onPress={handleConfirm}
@@ -187,11 +206,6 @@ const styles = StyleSheet.create({
   picker: {
     color: '#F8FAFC',
     fontSize: 16,
-  },
-  dropdownIcon: {
-    position: 'absolute',
-    right: 16,
-    top: '30%',
   },
   button: {
     flexDirection: 'row',
