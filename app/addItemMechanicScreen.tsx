@@ -25,13 +25,13 @@ const AddItemMechanicScreen: React.FC = () => {
   const loadCurrentValues = async () => {
     const storedTasks = await AsyncStorage.getItem("TASKS");
     const tasks = storedTasks ? JSON.parse(storedTasks) : {};
-
+  
     const updatedValues = {
-      trotinetesReparadas: tasks["mechanic_troti_repair"] ?? 0,
-      bicicletasReparadas: tasks["mechanic_bike_repair"] ?? 0,
+      trotinetesReparadas: tasks["mechanic_trotinetesReparadas"] ?? 0,  // 🔥 Corrigido para minúsculas
+      bicicletasReparadas: tasks["mechanic_bicicletasReparadas"] ?? 0,  // 🔥 Corrigido para minúsculas
     };
-
-    console.log("📥 Valores reais carregados no AddItemLime:", updatedValues);
+  
+    console.log("📥 Valores reais carregados no AddItemMechanicScreen:", updatedValues);
     setCurrentValues(updatedValues);
   };
 

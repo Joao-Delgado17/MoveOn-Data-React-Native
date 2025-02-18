@@ -25,6 +25,8 @@ const AddItemLinkScreen: React.FC = () => {
     missing: 0,
   });
 
+  const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+
   // 🔹 Carregar valores do AsyncStorage ao iniciar
   const loadCurrentValues = async () => {
     const storedTasks = await AsyncStorage.getItem("TASKS");
@@ -83,6 +85,7 @@ const AddItemLinkScreen: React.FC = () => {
     const userCity = (await AsyncStorage.getItem("CITY")) || "Desconhecido";
 
     const updatedValues = { ...currentValues };
+    
     Object.entries(adjustedCounts).forEach(([key, value]) => {
       const newValue = updatedValues[key as keyof typeof updatedValues] + value;
       updatedValues[key as keyof typeof updatedValues] = Math.max(0, newValue);
@@ -183,7 +186,13 @@ const AddItemLinkScreen: React.FC = () => {
 };
 
 const formatLabel = (key: string) => {
-  return key.replace(/([A-Z])/g, " $1").trim();
+  const labels: Record<string, string> = {
+    deploy: "Deploy",
+    collect: "Collect",
+    rebalance: "Rebalance",
+    missing: "Missing",
+  };
+  return labels[key] || key;
 };
 
 const styles = StyleSheet.create({

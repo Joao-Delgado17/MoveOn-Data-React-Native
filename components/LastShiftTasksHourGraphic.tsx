@@ -1,11 +1,28 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Dimensions } from 'react-native';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  ActivityIndicator, 
+  ScrollView, 
+  Dimensions 
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { BarChart } from 'react-native-chart-kit'; // 📊 Biblioteca de gráficos
-import { fetchLastShiftTasksHourData } from '../scripts/LastShiftDataGraphic'; // Importa os fetchs
-import { fetchWarehouseAverageTasksData } from '../scripts/WarehouseShiftDataGraphic'; // 📌 Função correta
+import { BarChart } from 'react-native-chart-kit';
+import { MaterialIcons } from '@expo/vector-icons';
+import { fetchLastShiftTasksHourData } from '../scripts/LastShiftDataGraphic';
+import { fetchWarehouseAverageTasksData } from '../scripts/WarehouseShiftDataGraphic';
 
-const screenWidth = Dimensions.get('window').width; // Largura da tela
+const screenWidth = Dimensions.get('window').width;
+
+const COLORS = {
+  primary: '#0F1A2F',
+  secondary: '#3B82F6',
+  accent: '#60A5FA',
+  background: '#1E293B',
+  text: '#F8FAFC',
+  muted: '#64748B'
+};
 
 const LastShiftTasksHourGraphic: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -27,14 +44,11 @@ const LastShiftTasksHourGraphic: React.FC = () => {
           const data = await fetchLastShiftTasksHourData(username);
           setChartData(data);
 
-          const avgData = await fetchWarehouseAverageTasksData(); // 📌 Função correta
-
-          // 🛠️ Verifica se avgData tem os campos corretos
-          if (avgData && avgData.labels && avgData.values) {
-            console.log('Médias do armazém carregadas:', avgData);
+          const avgData = await fetchWarehouseAverageTasksData();
+          
+          if (avgData?.labels && avgData?.values) {
             setAverageData(avgData);
           } else {
-            console.error('Formato inválido de avgData:', avgData);
             setAverageData({
               labels: ['Eu', 'Manhã', 'Tarde', 'Noite'],
               values: [0, 0, 0, 0],
@@ -42,7 +56,7 @@ const LastShiftTasksHourGraphic: React.FC = () => {
           }
         }
       } catch (error) {
-        console.error('Erro ao carregar os dados do turno:', error);
+        console.error('Erro ao carregar dados:', error);
       } finally {
         setLoading(false);
       }
@@ -52,129 +66,189 @@ const LastShiftTasksHourGraphic: React.FC = () => {
   }, []);
 
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-      
-      {/* 📊 Gráfico - Tarefas por Hora no Último Turno */}
+    <ScrollView 
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* 🔥 Gráfico - Tarefas por Hora */}
       <View style={styles.chartCard}>
-        <Text style={styles.chartTitle}>Tarefas por Hora - Último Turno</Text>
+        <View style={styles.sectionHeader1}>
+          <View style={styles.titlePill}>
+            <MaterialIcons name="insights" size={20} color={COLORS.text} />
+            <View style={styles.titleContainer}>
+              <Text style={styles.sectionMainTitle}>DESEMPENHO DO TURNO</Text>
+              <Text style={styles.sectionSubtitle}>Tarefa realizada por hora</Text>
+            </View>
+          </View>
+        </View>
         <View style={styles.divider} />
 
         {loading ? (
-          <ActivityIndicator size="large" color="#FFF" />
+          <ActivityIndicator size="large" color={COLORS.secondary} />
         ) : (
           <BarChart
             data={{
               labels: chartData.labels,
               datasets: [{ data: chartData.values }],
             }}
-            width={screenWidth * 0.8}
-            height={220} // Ajustado para melhor visualização
+            width={screenWidth - 40}
+            height={220}
             yAxisLabel=""
             yAxisSuffix=""
             chartConfig={chartConfig}
             style={styles.chart}
             fromZero
             withInnerLines={false}
-            withHorizontalLabels={true}
             showBarTops={false}
             verticalLabelRotation={0}
-            showValuesOnTopOfBars // Mostra os valores sobre as barras
+            showValuesOnTopOfBars
           />
         )}
       </View>
 
-      {/* 📊 Gráfico - Médias do Armazém */}
+      {/* 🔥 Gráfico - Médias do Armazém */}
       <View style={styles.chartCard}>
-        <Text style={styles.chartTitle}>Médias de Tarefas por Hora - Armazém</Text>
+        <View style={styles.sectionHeader1}>
+          <View style={styles.titlePill}>
+            <MaterialIcons name="compare" size={20} color={COLORS.text} />
+            <View style={styles.titleContainer}>
+              <Text style={styles.sectionMainTitle}>BENCHMARKING</Text>
+              <Text style={styles.sectionSubtitle}>Comparação com outros turnos</Text>
+            </View>
+          </View>
+        </View>
         <View style={styles.divider} />
 
         {loading ? (
-          <ActivityIndicator size="large" color="#FFF" />
+          <ActivityIndicator size="large" color={COLORS.secondary} />
         ) : (
           <BarChart
             data={{
               labels: averageData.labels,
-              datasets: [{ data: averageData.values.map(value => parseFloat(value.toFixed(1))) }], // Formata os valores com 1 casa decimal
+              datasets: [{ 
+                data: averageData.values.map(value => parseFloat(value.toFixed(1))) 
+              }]
             }}
-            width={screenWidth * 0.8}
-            height={220} // Ajustado para melhor visualização
+            width={screenWidth - 40}
+            height={220}
             yAxisLabel=""
             yAxisSuffix=""
             chartConfig={chartConfig}
             style={styles.chart}
             fromZero
-            withInnerLines={false}
-            withHorizontalLabels={true}
             showBarTops={false}
             verticalLabelRotation={0}
-            showValuesOnTopOfBars // Mostra os valores sobre as barras
+            showValuesOnTopOfBars
           />
         )}
       </View>
-
     </ScrollView>
   );
 };
 
-// 🎨 Estilos Modernos
 const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: 20,
-    paddingHorizontal: 10,
+    padding: 20,
+    paddingBottom: 40,
+    alignItems: 'center',
   },
   chartCard: {
-    backgroundColor: '#2A2A2A',
-    padding: 16,
-    borderRadius: 16,
-    marginRight: 10,
-    alignItems: 'center',
-    elevation: 5,
+    backgroundColor: COLORS.background,
+    padding: 15,
+    borderRadius: 15,
+    marginBottom: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
     shadowRadius: 6,
+    elevation: 3,
+    width: screenWidth - 40,
   },
-  chartTitle: {
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    paddingLeft: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: COLORS.secondary,
+  },
+  sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#FFF',
-    marginBottom: 8,
+    color: COLORS.text,
+    marginLeft: 8,
   },
   divider: {
     width: '100%',
     height: 1,
-    backgroundColor: '#444',
-    marginVertical: 8,
+    backgroundColor: COLORS.muted,
+    marginVertical: 12,
+    opacity: 0.3,
   },
   chart: {
     marginVertical: 8,
-    borderRadius: 8,
-    overflow: 'hidden',
+    marginLeft: -15,
+    borderRadius: 12,
+  },
+  sectionHeader1: {
+    marginBottom: 16,
+  },
+  titlePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(59, 130, 246, 0.15)',
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    alignSelf: 'flex-start',
+  },
+  titleContainer: {
+    marginLeft: 10,
+  },
+  sectionMainTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: COLORS.secondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  sectionSubtitle: {
+    fontSize: 12,
+    color: COLORS.muted,
+    fontWeight: '500',
+    marginTop: 2,
   },
 });
 
-// Configuração dos gráficos 📊
 const chartConfig = {
-  backgroundGradientFrom: '#2A2A2A',
-  backgroundGradientTo: '#2A2A2A',
-  color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`, // Cor dos rótulos
-  labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`, // Cor dos rótulos
-  barPercentage: 0.55, // 🔥 Reduz um pouco a largura das barras para espaçamento leve
-  fillShadowGradient: '#FFA726', // 🔥 Cor das barras (gradiente laranja)
+  backgroundGradientFrom: COLORS.background,
+  backgroundGradientTo: COLORS.background,
+  fillShadowGradient: COLORS.secondary,
   fillShadowGradientOpacity: 1,
-  decimalPlaces: 1, // 🔥 Garante 1 casa decimal
+  color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+  labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+  barPercentage: 0.7,
+  decimalPlaces: 1,
   propsForLabels: {
-    fontSize: 12,
-    fontWeight: 'bold',
+    fontSize: 10,
+    fontWeight: '500',
   },
   propsForBackgroundLines: {
-    strokeWidth: 0, // 🔥 Remove as linhas de fundo para um visual mais clean
+    strokeWidth: 0,
   },
-  showValuesOnTopOfBars: true, // 🔥 Mostra os valores sobre as barras
-  barRadius: 5, // 🔥 Deixa as barras com bordas superiores arredondadas
-  formatYLabel: (value: string) => ` ${value} `, // 🔥 Adiciona um espaço para afastar os valores das barras
+  propsForValues: {
+    fontSize: 12, 
+    fontWeight: 'bold', 
+    color: '#FFF',
+  },
+  barRadius: 4,
+  formatYLabel: (value: string) => `${value} `, // Formata os valores
+  style: {
+    borderRadius: 12,
+  },
+  useShadowColorFromDataset: false,
+  showValuesOnTopOfBars: true, // 🔥 Mostra valores no topo das barras
 };
-
 
 export default LastShiftTasksHourGraphic;

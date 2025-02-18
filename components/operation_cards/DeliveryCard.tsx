@@ -23,25 +23,17 @@ const DeliveryCard: React.FC<{ disabled?: boolean }> = ({ disabled = false }) =>
       const storedTasks = await AsyncStorage.getItem("TASKS");
       const tasks = storedTasks ? JSON.parse(storedTasks) : {};
   
-      const keys = Object.keys(data);
-      const values = keys.map(key => tasks[`delivery_Entregas${key}`] ?? 0);
-  
-      const storedValues: any = {};
-      keys.forEach((key, index) => {
-        storedValues[key] = values[index];
+      // Corrigindo a chave de acesso
+      setData({
+        Entregas: tasks.delivery_entregas || 0 // 🚨 Chave corrigida
       });
   
-      console.log("📥 Dados carregados no DeliveryCard:", storedValues); // 🔥 Log para depuração
-      setData(storedValues);
+      console.log("📥 Dados carregados no DeliveryCard:", tasks.delivery_entregas);
     };
   
     loadData();
   
-    // 🔹 Atualiza sempre que o usuário volta para a tela
-    const unsubscribe = navigation.addListener("focus", () => {
-      loadData();
-    });
-  
+    const unsubscribe = navigation.addListener("focus", loadData);
     return unsubscribe;
   }, [navigation]);
 

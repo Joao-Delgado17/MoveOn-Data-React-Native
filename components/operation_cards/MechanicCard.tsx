@@ -15,8 +15,8 @@ const MechanicCard: React.FC<{ disabled?: boolean }> = ({ disabled = false }) =>
   const isFocused = useIsFocused();
 
   const [data, setData] = useState({
-    TrotinetesReparadas: 0,
-    BicicletasReparadas: 0,
+    trotinetesReparadas: 0,
+    bicicletasReparadas: 0,
   });
 
   const [expanded, setExpanded] = useState(false); // Começa colapsado
@@ -27,16 +27,13 @@ const MechanicCard: React.FC<{ disabled?: boolean }> = ({ disabled = false }) =>
       const storedTasks = await AsyncStorage.getItem("TASKS");
       const tasks = storedTasks ? JSON.parse(storedTasks) : {};
   
-      const keys = Object.keys(data);
-      const values = keys.map(key => tasks[`mechanic_${key}`] ?? 0);
+      const updatedValues = {
+        trotinetesReparadas: tasks["mechanic_trotinetesReparadas"] ?? 0,  // 🔥 Mesmo nome do AddItem
+        bicicletasReparadas: tasks["mechanic_bicicletasReparadas"] ?? 0,  // 🔥 Mesmo nome do AddItem
+      };
   
-      const storedValues: any = {};
-      keys.forEach((key, index) => {
-        storedValues[key] = values[index];
-      });
-  
-      console.log("📥 Dados carregados no MechanicCard:", storedValues); // 🔥 Log para depuração
-      setData(storedValues);
+      console.log("📥 Dados carregados no MechanicCard:", updatedValues); // 🔥 Log para depuração
+      setData(updatedValues);
     };
   
     loadData();
@@ -78,7 +75,7 @@ const MechanicCard: React.FC<{ disabled?: boolean }> = ({ disabled = false }) =>
 
             {!expanded ? (
               <Text style={styles.totalText}>
-                Total: {data.TrotinetesReparadas + data.BicicletasReparadas} reparos
+                Total: {data.trotinetesReparadas + data.bicicletasReparadas} reparos
               </Text>
             ) : (
               <View style={styles.table}>

@@ -7,10 +7,20 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import TurnoCards from '../../components/LastTurnCard';
 import LastShiftTasksHourGraphic from '../../components/LastShiftTasksHourGraphic';
 
+const COLORS = {
+  primary: '#0F1A2F',     // Azul escuro
+  secondary: '#3B82F6',   // Azul vibrante
+  accent: '#60A5FA',      // Azul claro
+  background: '#1E293B',  // Fundo escuro
+  text: '#F8FAFC',        // Texto branco
+  muted: '#64748B'        // Texto secundário
+};
+
 const StartScreen: React.FC = () => {
   const [username, setUsername] = useState<string | null>(null);
   const [city, setCity] = useState<string | null>(null);
   const [userType, setUserType] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'activity' | 'history'>('activity');
   const router = useRouter();
 
   useEffect(() => {
@@ -37,9 +47,7 @@ const StartScreen: React.FC = () => {
       {
         text: 'Sim',
         onPress: async () => {
-          await AsyncStorage.removeItem('USERNAME');
-          await AsyncStorage.removeItem('CITY');
-          await AsyncStorage.removeItem('USER_TYPE');
+          await AsyncStorage.clear();
           router.replace('/loginScreen');
         },
       },
@@ -48,107 +56,189 @@ const StartScreen: React.FC = () => {
 
   const capitalizeFirstLetter = (text: string | null) => {
     if (!text) return 'N/A';
-    return text.charAt(0).toUpperCase() + text.slice(1);
+    return text.charAt(0).toUpperCase() + text.slice(1).toLowerCase();
   };
 
   return (
-    <ImageBackground
-      source={require('../../assets/images/move-on-logo.png')}
-      style={styles.backgroundImage}
-      resizeMode="cover"
-    >
-      <LinearGradient colors={['rgba(18, 18, 18, 0.9)', 'rgba(26, 26, 26, 0.95)']} style={styles.container}>
-
-        <ScrollView contentContainerStyle={styles.scrollPage}>
-
-          {/* Cabeçalho */}
+    <View style={styles.container}>
+      <LinearGradient 
+        colors={['#0F1A2F', '#1E293B']}
+        style={styles.gradientOverlay}
+      >
+        {/* Área Fixa - Header e Tabs */}
+        <View style={styles.fixedHeader}>
           <View style={styles.header}>
-            <View>
-              <Text style={styles.title}>Bem-vindo, {username || 'Usuário'}!</Text>
-              <Text style={styles.subtitle}>Cidade: {city || 'Desconhecida'}</Text>
-              <Text style={styles.subtitle}>{userType || 'N/A'}</Text>
+            <View style={styles.profileContainer}>
+              <Icon name="person" size={28} color={COLORS.text} style={styles.profileIcon} />
+              <View>
+                <Text style={styles.title}>{username || 'Usuário'}</Text>
+                <View style={styles.locationContainer}>
+                  <Icon name="location-on" size={16} color={COLORS.muted} />
+                  <Text style={styles.subtitle}>{city || 'Localização desconhecida'}</Text>
+                </View>
+              </View>
             </View>
+
             <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-              <Icon name="logout" size={20} color="#FFF" />
+              <Icon name="logout" size={20} color={COLORS.text} />
               <Text style={styles.logoutText}>Sair</Text>
             </TouchableOpacity>
           </View>
 
-          {/* 📊 Scroll horizontal para os gráficos */}
-          <View style={styles.scrollContainer}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+          {/* Tabs */}
+          <View style={styles.tabsContainer}>
+            <TouchableOpacity 
+              style={[styles.tab, activeTab === 'activity' && styles.activeTab]}
+              onPress={() => setActiveTab('activity')}
+            >
+              <Text style={[styles.tabText, activeTab === 'activity' && styles.activeTabText]}>Atividade</Text>
+              {activeTab === 'activity' && <View style={styles.tabIndicator} />}
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[styles.tab, activeTab === 'history' && styles.activeTab]}
+              onPress={() => setActiveTab('history')}
+            >
+              <Text style={[styles.tabText, activeTab === 'history' && styles.activeTabText]}>Histórico</Text>
+              {activeTab === 'history' && <View style={styles.tabIndicator} />}
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Área Rolável */}
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {activeTab === 'activity' ? (
+            <View style={styles.tabContent}>
               <LastShiftTasksHourGraphic />
-            </ScrollView>
-          </View>
-
-          {/* 🔄 Scroll horizontal para os cards de turnos */}
-          <View style={styles.scrollContainer}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+            </View>
+          ) : (
+            <View style={styles.tabContent}>
               <TurnoCards />
-            </ScrollView>
-          </View>
-
+            </View>
+          )}
         </ScrollView>
       </LinearGradient>
-    </ImageBackground>
+    </View>
   );
 };
 
-// 🎨 **Estilos Atualizados**
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    backgroundColor: COLORS.primary,
   },
   backgroundImage: {
     flex: 1,
-    width: '100%',
-    height: '100%',
-    position: 'absolute',
+    opacity: 0.15,
+  },
+  gradientOverlay: {
+    flex: 1,
+  },
+  fixedHeader: {
+    paddingTop: Platform.OS === 'ios' ? 60 : 40,
+    paddingHorizontal: 24,
+    backgroundColor: COLORS.primary,
+    zIndex: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 5,
   },
   scrollPage: {
     flexGrow: 1,
     paddingBottom: 20,
   },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingBottom: 100,
+    paddingTop: 10,
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
+  },
+  profileContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  profileIcon: {
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
+    padding: 8,
+    marginRight: 12,
   },
   title: {
-    fontSize: 26,
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#FFF',
+    color: COLORS.text,
+  },
+  locationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#BBB',
-    marginTop: 4,
+    fontSize: 14,
+    color: COLORS.muted,
+    marginLeft: 4,
   },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#444',
+    backgroundColor: COLORS.background,
     paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderRadius: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.secondary,
   },
   logoutText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: 'bold',
+    color: COLORS.text,
+    fontSize: 14,
+    fontWeight: '600',
     marginLeft: 8,
   },
-  scrollContainer: {
-    flex: 1,
-    width: '100%',
-    marginBottom: 10, // 🔥 Espaçamento entre seções
+  tabsContainer: {
+    flexDirection: 'row',
+    marginBottom: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.background,
   },
-  scrollContent: {
-    flexGrow: 1,
-    paddingBottom: 20,
+  tab: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 16,
+    position: 'relative',
+  },
+  activeTab: {},
+  tabText: {
+    color: COLORS.muted,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  activeTabText: {
+    color: COLORS.secondary,
+  },
+  tabIndicator: {
+    position: 'absolute',
+    bottom: 0,
+    height: 3,
+    width: '100%',
+    backgroundColor: COLORS.secondary,
+  },
+  tabContent: {
+    flex: 1,
+    minHeight: 500, // Garante espaço mínimo para scroll
+  },
+  section: {
+    marginBottom: 32,
   },
 });
 

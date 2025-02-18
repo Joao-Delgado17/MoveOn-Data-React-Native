@@ -15,21 +15,35 @@ import {
   Dimensions,
   SafeAreaView,
   Keyboard,
+  Platform,
 } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { MaterialIcons, FontAwesome5 } from "@expo/vector-icons";
+import { MaterialIcons, FontAwesome5, MaterialCommunityIcons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import exportToGoogleSheets from "../scripts/ExportShiftFinal";
+import exportDeliveriesToGoogleSheets from "../scripts/ExportShiftFinalDelivery";
+import exportMechanicToGoogleSheets from "../scripts/ExportShiftFinalMechanic";
 import uploadToFirebase from "../scripts/uploadImagesToGoogleDrive";
+import { exportWarehouseLog } from "../scripts/ExportWarehouseButtonLog";
 
 // Components
 import LimeCard from "../components/operation_cards/LimeCard";
 import RidemoviCard from "../components/operation_cards/RidemoviCard";
 import BirdCard from "../components/operation_cards/BirdCard";
 import BoltCard from "../components/operation_cards/BoltCard";
+import LinkCard from "../components/operation_cards/LinkCard";
+import DeliveryCard from "../components/operation_cards/DeliveryCard";
+import MechanicCard from "@/components/operation_cards/MechanicCard";
 
 const { width } = Dimensions.get('window');
+
+const colors = {
+  primary: '#0F1A2F',    // Azul escuro
+  secondary: '#3B82F6',  // Azul principal
+  background: '#1E293B', // Fundo escuro
+  text: '#F8FAFC'        // Texto branco
+};
 
 const PHOTO_ANGLES = [
   { 
@@ -63,16 +77,22 @@ const PHOTO_ANGLES = [
 
 const TurnoHomeScreen: React.FC = () => {
   const [isWarehouseActive, setIsWarehouseActive] = useState(false);
+  const [city, setCity] = useState<string | null>(null);
+  const [userType, setUserType] = useState<string | null>(null);
   const [elapsedTime, setElapsedTime] = useState("00:00:00");
   const [modalVisible, setModalVisible] = useState(false);
   const [kmFinal, setKmFinal] = useState("");
   const [notes, setNotes] = useState("");
   const [images, setImages] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [currentPhotoStep, setCurrentPhotoStep] = useState(0);
   const navigation = useNavigation();
   const [kmInicial, setKmInicial] = useState<number | null>(null);
   const [kmPercorridos, setKmPercorridos] = useState<number | null>(null);
+  const [isLoadingWarehouse, setIsLoadingWarehouse] = useState(false);
+  const [isKmFocused, setIsKmFocused] = useState(false);
+  const [isNotesFocused, setIsNotesFocused] = useState(false);
 
 
   useFocusEffect(
@@ -84,10 +104,36 @@ const TurnoHomeScreen: React.FC = () => {
   );
 
   useEffect(() => {
-    const loadState = async () => {
-      const status = await AsyncStorage.getItem("isWarehouseActive");
-      setIsWarehouseActive(status === "true");
+    const loadUserData = async () => {
+      try {
+        const savedCity = await AsyncStorage.getItem("CITY");
+        const userType = await AsyncStorage.getItem("USER_TYPE");
+        
+        setCity(savedCity || "Desconhecida"); // Valor padrão caso não exista
+        setUserType(userType || "driver"); // Valor padrão caso não exista
+      } catch (error) {
+        console.error("Erro ao carregar dados:", error);
+        Alert.alert("Erro", "Falha ao carregar dados do utilizador");
+      } finally {
+        setLoading(false);
+      }
+    };
   
+    loadUserData();
+  }, []);
+
+  useEffect(() => {
+    const loadState = async () => {
+      const userType = (await AsyncStorage.getItem("USER_TYPE")) || "driver";
+  
+      if (userType === "mechanic") {
+        setIsWarehouseActive(true); // Define como ativo para evitar bloqueios
+      } else {
+        const status = await AsyncStorage.getItem("isWarehouseActive");
+        setIsWarehouseActive(status === "true");
+      }
+  
+      // 🔥 Atualiza o Timer independentemente do tipo de usuário
       const startTimeStr = await AsyncStorage.getItem("startTime");
       if (startTimeStr) {
         const startTime = parseInt(startTimeStr, 10);
@@ -95,19 +141,18 @@ const TurnoHomeScreen: React.FC = () => {
           const interval = setInterval(() => {
             const now = Date.now();
             const diff = now - startTime;
-  
             setElapsedTime(formatTime(diff));
           }, 1000);
-          return () => clearInterval(interval);
+  
+          return () => clearInterval(interval); // Garante que o intervalo seja limpo corretamente
         }
       }
-  
-      const storedTasks = await AsyncStorage.getItem("TASKS");
-      console.log("Loaded tasks:", storedTasks || "{}");
     };
   
     loadState();
   }, []);
+  
+
 
   useEffect(() => {
     if (modalVisible) {
@@ -142,27 +187,38 @@ const TurnoHomeScreen: React.FC = () => {
   };
 
   const handleWarehouseAction = async () => {
-    const currentTime = Date.now();
-    if (!isWarehouseActive) {
-      await AsyncStorage.setItem("warehouseStartTime", currentTime.toString());
-      await AsyncStorage.setItem("isWarehouseActive", "true");
-      setIsWarehouseActive(true);
-      Alert.alert("Saída Registrada", "Bom trabalho!");
-    } else {
-      const warehouseStartTime = parseInt(await AsyncStorage.getItem("warehouseStartTime") || "0");
-      const elapsed = currentTime - warehouseStartTime;
-      await AsyncStorage.multiSet([
-        ["warehouseEndTime", currentTime.toString()],
-        ["warehouseElapsedTime", elapsed.toString()],
-        ["isWarehouseActive", "false"]
-      ]);
-      setIsWarehouseActive(false);
-      Alert.alert("Chegada Registrada", "Bem-vindo de volta!");
+    try {
+      setIsLoadingWarehouse(true); // 🚀 Ativar loading
+  
+      const tipoRegistro = isWarehouseActive ? "Chegada" : "Saída";
+      await exportWarehouseLog(tipoRegistro); // 🚀 Chamar a função do script
+  
+      // 🚀 Atualiza o estado no AsyncStorage
+      if (!isWarehouseActive) {
+        await AsyncStorage.setItem("warehouseStartTime", Date.now().toString());
+        await AsyncStorage.setItem("isWarehouseActive", "true");
+        setIsWarehouseActive(true);
+        Alert.alert("Saída Registrada", "Bom trabalho!");
+      } else {
+        const warehouseStartTime = parseInt((await AsyncStorage.getItem("warehouseStartTime")) || "0");
+        const elapsed = Date.now() - warehouseStartTime;
+        await AsyncStorage.multiSet([
+          ["warehouseEndTime", Date.now().toString()],
+          ["warehouseElapsedTime", elapsed.toString()],
+          ["isWarehouseActive", "false"],
+        ]);
+        setIsWarehouseActive(false);
+        Alert.alert("Chegada Registrada", "Bem-vindo de volta!");
+      }
+    } catch (error) {
+      Alert.alert("Erro", "Não foi possível registrar a ação.");
+    } finally {
+      setIsLoadingWarehouse(false); // 🚀 Desativar loading
     }
   };
 
   const handleFinalizarTurno = () => {
-    if (isWarehouseActive) {
+    if (userType !== "mechanic" && isWarehouseActive) {
       Alert.alert("Ação Necessária", "Registe primeiro a chegada ao armazém!");
       return;
     }
@@ -195,80 +251,92 @@ const TurnoHomeScreen: React.FC = () => {
   };
   
   const confirmarFinalizarTurno = async () => {
-    if (!validateForm()) return;
-  
-    setIsLoading(true);
+  if (!validateForm()) return;
 
-    try {
-      
-      // Filtrar nulls e garantir array de strings
-      const imageLinks = (await Promise.all(images.map(uploadToFirebase)))
-        .filter((link): link is string => link !== null);
-  
-      if (imageLinks.length !== 4) {
+  setIsLoading(true);
+  await new Promise(resolve => setTimeout(resolve, 50));
+
+  try {
+    const userType = (await AsyncStorage.getItem("USER_TYPE")) || "driver"; // Padrão para driver
+    const imageLinks = (await Promise.all(images.map(uploadToFirebase)))
+      .filter((link): link is string => link !== null);
+
+      if (userType !== "mechanic" && images.length !== 4) {
         Alert.alert("Erro", "O upload de algumas imagens falhou");
         return;
       }
-  
-      await AsyncStorage.multiSet([
-        ["kmFinal", kmFinal],
-        ["notes", notes],
-        ["imageDriveLinks", JSON.stringify(imageLinks)]
-      ]);
-  
-      const tasks = JSON.parse(await AsyncStorage.getItem("TASKS") || "{}");
-      await exportToGoogleSheets(imageLinks, tasks);
-  
-      await AsyncStorage.multiRemove([
-        "isTurnActive", "startTime", "warehouseStartTime",
-        "warehouseEndTime", "warehouseElapsedTime", "kmInicial",
-        "kmFinal", "notes", "TASKS", "imageDriveLinks"
-      ]);
-  
-      setModalVisible(false);
-      setTimeout(() => navigation.reset({ 
-        index: 0, 
-        routes: [{ name: "index" as never }] // Correção do tipo da rota
-      }), 1000);
-    } catch (error) {
-      const errorMessage = error instanceof Error
-        ? error.message
-        : "Falha ao finalizar turno";
-      Alert.alert("Erro", errorMessage);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+      
 
-  const validateForm = () => {
-    const kmFinalNumber = parseInt(kmFinal, 10);
-    
-    if (!kmFinal.trim() || isNaN(kmFinalNumber)) {
+    await AsyncStorage.multiSet([
+      ["kmFinal", kmFinal],
+      ["notes", notes],
+      ["imageDriveLinks", JSON.stringify(imageLinks)]
+    ]);
+
+    if (userType === "driver") {
+      await exportToGoogleSheets(imageLinks, JSON.parse(await AsyncStorage.getItem("TASKS") || "{}"));
+    } else if (userType === "delivery") {
+      await exportDeliveriesToGoogleSheets(imageLinks);
+    } else if (userType === "mechanic") {
+      await exportMechanicToGoogleSheets();
+    }
+
+    await AsyncStorage.multiRemove([
+      "isTurnActive", "startTime", "kmInicial",
+      "kmFinal", "notes", "TASKS", "imageDriveLinks"
+    ]);
+
+    setModalVisible(false);
+    setTimeout(() => navigation.reset({ 
+      index: 0, 
+      routes: [{ name: "index" as never }] // Corrige a navegação
+    }), 1000);
+  } catch (error) {
+    Alert.alert("Erro", "Falha ao finalizar turno.");
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+const validateForm = () => {
+  if (userType === "mechanic") {
+      if (!notes.trim()) {
+          Alert.alert("❌ Campo Obrigatório", "Preencha o campo de notas.");
+          return false;
+      }
+      return true; // Permite finalizar turno com apenas notas
+  }
+
+  // Validação normal para outros usuários
+  const kmFinalNumber = parseInt(kmFinal, 10);
+  
+  if (!kmFinal.trim() || isNaN(kmFinalNumber)) {
       Alert.alert("❌ Valor Inválido", "Insira uma quilometragem válida.");
       return false;
-    }
-  
-    if (kmInicial !== null) {
+  }
+
+  if (kmInicial !== null) {
       const kmPercorridos = kmFinalNumber - kmInicial;
-  
+
       if (kmPercorridos < 0) {
-        Alert.alert("⚠️ Erro", "Os quilómetros finais não podem ser menores que os iniciais.");
-        return false;
+          Alert.alert("⚠️ Erro", "Os quilómetros finais não podem ser menores que os iniciais.");
+          return false;
       }
-  
+
       if (kmPercorridos > 250) {
-        Alert.alert("⚠️ Erro", "O percurso não pode ser maior que 250km. Verifique os valores.");
-        return false;
+          Alert.alert("⚠️ Erro", "O percurso não pode ser maior que 250km. Verifique os valores.");
+          return false;
       }
-    }
-  
-    if (images.length !== 4) {
+  }
+
+  if (images.length !== 4) {
       Alert.alert("⚠️ Fotos Incompletas", "Capture todas as 4 fotos obrigatórias.");
       return false;
-    }
-  
-    return true;
-  };
+  }
+
+  return true;
+};
+
 
   const PhotoGrid = () => (
     <View style={styles.photoGrid}>
@@ -278,7 +346,7 @@ const TurnoHomeScreen: React.FC = () => {
             <Image source={{ uri: images[index] }} style={styles.photo} />
           ) : (
             <View style={[styles.photoPlaceholder, angle.style]}>
-              <FontAwesome5 name={angle.icon} size={32} color="#64748b" />
+              <FontAwesome5 name={angle.icon} size={28} color="#64748b" />
               <Text style={styles.photoLabel}>{angle.title}</Text>
               {index === currentPhotoStep && (
                 <View style={styles.photoBadge}>
@@ -292,6 +360,14 @@ const TurnoHomeScreen: React.FC = () => {
     </View>
   );
 
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#3B82F6" />
+        <Text style={styles.loadingText}>Carregando...</Text>
+      </View>
+    );
+  }
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -299,25 +375,44 @@ const TurnoHomeScreen: React.FC = () => {
         <Text style={styles.timer}>{elapsedTime}</Text>
       </View>
 
-      <TouchableOpacity 
-        style={[styles.warehouseButton, isWarehouseActive && styles.warehouseActive]}
-        onPress={handleWarehouseAction}
-      >
-        <MaterialIcons 
-          name={isWarehouseActive ? "location-on" : "location-off"} 
-          size={24} 
-          color="black" 
-        />
-        <Text style={styles.buttonText}>
-          {isWarehouseActive ? "Chegada ao armazém" : "Saida do Armazém"}
-        </Text>
-      </TouchableOpacity>
+      {userType !== "mechanic" && (
+        <TouchableOpacity
+          style={[styles.warehouseButton, isWarehouseActive && styles.warehouseActive]}
+          onPress={handleWarehouseAction}
+          disabled={isLoadingWarehouse} // 🔥 Desativa botão enquanto carrega
+        >
+          {isLoadingWarehouse ? (
+            <ActivityIndicator size="small" color="black" /> // 🔥 Mostra loading
+          ) : (
+            <>
+              <MaterialIcons 
+                name={isWarehouseActive ? "location-on" : "location-off"} 
+                size={24} 
+                color="black" 
+              />
+              <Text style={styles.buttonText}>
+                {isWarehouseActive ? "Chegada ao armazém" : "Saída do Armazém"}
+              </Text>
+            </>
+          )}
+        </TouchableOpacity>
+      )}
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <LimeCard disabled={!isWarehouseActive} />
-        <RidemoviCard disabled={!isWarehouseActive} />
-        <BirdCard disabled={!isWarehouseActive} />
-        <BoltCard disabled={!isWarehouseActive} />
+        {city === "Canarias" ? (
+          <LinkCard disabled={!isWarehouseActive} />
+        ) : userType === "delivery" ? (
+          <DeliveryCard disabled={!isWarehouseActive} />
+        ) : userType === "mechanic" ? (
+          <MechanicCard disabled={!isWarehouseActive} />
+        ) : city === "Lisboa" ? (
+          <>
+            <LimeCard disabled={!isWarehouseActive} />
+            <RidemoviCard disabled={!isWarehouseActive} />
+            <BirdCard disabled={!isWarehouseActive} />
+            <BoltCard disabled={!isWarehouseActive} />
+          </>
+        ) : null}
       </ScrollView>
 
       <TouchableOpacity style={styles.fab} onPress={handleFinalizarTurno}>
@@ -330,60 +425,88 @@ const TurnoHomeScreen: React.FC = () => {
             <View style={styles.modalCard}>
               <Text style={styles.modalTitle}>Finalizar Turno</Text>
 
-              <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Quilómetros Finais</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Ex: 150 km"
-                  placeholderTextColor="#94a3b8"
-                  keyboardType="numeric"
-                  value={kmFinal}
-                  onChangeText={handleKmFinalChange}
-                  returnKeyType="done"
-                />
-                {kmInicial !== null && (
-                  <View style={styles.kmInfoContainer}>
-                    <Text style={styles.kmInicial}>Inicial: {kmInicial} km</Text>
-                    {kmPercorridos !== null && <Text style={styles.kmPercorridos}> | Percorridos: {kmPercorridos} km</Text>}
+              {userType !== "mechanic" && (
+                <View style={[styles.inputContainer, { 
+                  borderColor: isKmFocused ? colors.secondary : '#334155' // Alteração aqui
+                }]}>
+                  <MaterialCommunityIcons 
+                    name="speedometer" 
+                    size={24} 
+                    color={isKmFocused  ? colors.secondary : colors.text} 
+                    style={styles.icon} 
+                  />
+                  <View style={styles.inputWrapper}>
+                    <Text style={[styles.inputLabel, isKmFocused  && { color: colors.secondary }]}>Quilómetros Finais</Text>
+                    <TextInput
+                      style={[styles.input, { color: colors.text }]}
+                      placeholder="Ex: 150 km"
+                      placeholderTextColor="#64748B"
+                      keyboardType="numeric"
+                      value={kmFinal}
+                      onChangeText={handleKmFinalChange}
+                      onFocus={() => setIsKmFocused(true)}
+                      onBlur={() => setIsKmFocused(false)}
+                      returnKeyType="done"
+                    />
+                    {kmInicial !== null && (
+                      <View style={styles.kmInfoContainer}>
+                        <Text style={styles.kmInicial}>Inicial: {kmInicial} km</Text>
+                        {kmPercorridos !== null && <Text style={styles.kmPercorridos}> | Percorridos: {kmPercorridos} km</Text>}
+                      </View>
+                    )}
                   </View>
-                )}
-              </View>
+                </View>
+              )}
 
-
-              <View style={styles.inputContainer}>
-                <Text style={styles.inputLabel}>Observações</Text>
-                <TextInput
-                  style={[styles.input, styles.notesInput]}
-                  placeholder="Notas importantes..."
-                  placeholderTextColor="#94a3b8"
-                  multiline
-                  value={notes}
-                  onChangeText={setNotes}
-                  returnKeyType="done"
-                  onSubmitEditing={Keyboard.dismiss}
+              {/* Campo Observações */}
+              <View style={[styles.inputContainer, { 
+                borderColor: isNotesFocused ? colors.secondary : '#334155' // Alteração aqui
+              }]}>
+                <MaterialCommunityIcons 
+                  name="text-box-outline" 
+                  size={24} 
+                  color={isNotesFocused  ? colors.secondary : colors.text} 
+                  style={styles.icon} 
                 />
+                <View style={styles.inputWrapper}>
+                  <Text style={[styles.inputLabel, isNotesFocused  && { color: colors.secondary }]}>Observações</Text>
+                  <TextInput
+                    style={[styles.input, styles.notesInput, { color: colors.text }]}
+                    placeholder="Notas importantes..."
+                    placeholderTextColor="#64748B"
+                    multiline
+                    value={notes}
+                    onChangeText={setNotes}
+                    onFocus={() => setIsNotesFocused(true)}
+                    onBlur={() => setIsNotesFocused(false)}
+                    returnKeyType="done"
+                  />
+                </View>
               </View>
 
-              <PhotoGrid />
+              {userType !== "mechanic" && <PhotoGrid />}
 
               <View style={styles.buttonGroup}>
-                <TouchableOpacity 
-                  style={[styles.actionButton, styles.cameraButton]}
-                  onPress={capturePhoto}
-                  disabled={images.length >= 4}
-                >
-                  <MaterialIcons 
-                    name="photo-camera" 
-                    size={24} 
-                    color={images.length >= 4 ? "#94a3b8" : "white"} 
-                  />
-                  <Text style={[
-                    styles.buttonText, 
-                    images.length >= 4 && styles.disabledText
-                  ]}>
-                    {images.length >= 4 ? 'Completo' : 'Capturar Foto'}
-                  </Text>
-                </TouchableOpacity>
+
+                {userType !== "mechanic" && (
+                  <TouchableOpacity 
+                    style={[styles.actionButton, styles.cameraButton]}
+                    onPress={capturePhoto}
+                    disabled={images.length >= 4}
+                  >
+                    <MaterialIcons 
+                      name="photo-camera" 
+                      size={24} 
+                      color={images.length >= 4 ? "#94a3b8" : "white"} 
+                    />
+                    <Text style={[
+                      styles.buttonText, 
+                      images.length >= 4 && styles.disabledText
+                    ]}>
+                      {images.length >= 4 ? 'Completo' : 'Capturar Foto'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
 
                 <View style={styles.confirmationGroup}>
                   <TouchableOpacity
@@ -396,7 +519,7 @@ const TurnoHomeScreen: React.FC = () => {
                   <TouchableOpacity
                     style={[styles.actionButton, styles.confirmButton]}
                     onPress={confirmarFinalizarTurno}
-                    disabled={images.length !== 4}
+                    disabled={userType !== "mechanic" && images.length !== 4}
                   >
                     {isLoading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.buttonText}>Confirmar</Text>}
                   </TouchableOpacity>
@@ -407,14 +530,19 @@ const TurnoHomeScreen: React.FC = () => {
         </TouchableWithoutFeedback>
       </Modal>
 
-      <Modal visible={isLoading} transparent>
-        <View  style={styles.loadingOverlay}>
+      <Modal 
+        visible={isLoading} 
+        transparent
+        animationType="fade"
+        statusBarTranslucent // Fundamental para iOS
+      >
+        <View style={styles.loadingOverlay}>
           <View style={styles.loadingCard}>
             <ActivityIndicator size="large" color="#3b82f6" />
             <Text style={styles.loadingText}>A processar...</Text>
             <Text style={styles.loadingSubtext}>Por favor aguarde</Text>
           </View>
-        </View >
+        </View>
       </Modal>
     </View>
   );
@@ -500,26 +628,47 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   inputContainer: {
-    marginBottom: 20,
-  },
-  inputLabel: {
-    fontSize: 14,
-    color: "#64748b",
-    marginBottom: 8,
-    fontWeight: "500",
-  },
-  input: {
-    backgroundColor: "#334155",
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.background,
     borderRadius: 12,
-    padding: 14,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: "#475569",
-    color: "white",
+    padding: 16,
+    borderWidth: 2,
+    marginVertical: 12,
   },
+
+  inputWrapper: {
+    flex: 1,
+  },
+
+  inputLabel: {
+    position: 'absolute',
+    top: -10,
+    left: 8,
+    fontSize: 12,
+    color: '#94A3B8',
+    backgroundColor: colors.background,
+    paddingHorizontal: 4,
+    zIndex: 1,
+  },
+
+  input: {
+    fontSize: 16,
+    fontWeight: '500',
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    minHeight: 28,
+    color: colors.text,
+  },
+
+  icon: {
+    marginRight: 12,
+  },
+
   notesInput: {
-    height: 100,
-    textAlignVertical: "top",
+    textAlignVertical: 'top',
+    minHeight: 80,
+    paddingTop: 12,
   },
   photoGrid: {
     flexDirection: "row",
@@ -529,7 +678,7 @@ const styles = StyleSheet.create({
   },
   photoCell: {
     width: (width * 0.9 - 48 - 20) / 2,
-    height: 120,
+    height: 100,
     borderRadius: 12,
     overflow: "hidden",
   },
@@ -610,26 +759,45 @@ const styles = StyleSheet.create({
     fontWeight: "400", // 🔹 Fonte normal, sem destaque
   },
   kmPercorridos: {
-    fontSize: 14, // 🔥 Um pouco maior para se destacar
+    fontSize: 13, // 🔥 Um pouco maior para se destacar
     color: "#fbbf24", // 🔥 Amarelo para chamar atenção
     fontWeight: "600", // 🔥 Negrito para destaque
   },
   
-  
-
   // Loading Styles
   loadingOverlay: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(15,23,42,0.9)",
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: Platform.select({
+      ios: 'rgba(0,0,0,0.6)', // Aumente a opacidade
+      android: 'rgba(15,23,42,0.9)'
+    }),
+    ...Platform.select({
+      ios: {
+        paddingTop: 44, // Compensar pela status bar
+        paddingBottom: 34 // Compensar pelo home indicator
+      }
+    })
   },
   loadingCard: {
-    backgroundColor: "white",
+    backgroundColor: 'white',
     padding: 32,
     borderRadius: 20,
-    alignItems: "center",
-    width: width * 0.7,
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        marginHorizontal: 20, // Evitar que toque nas bordas
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 6,
+      },
+      android: {
+        elevation: 5,
+        width: width * 0.8
+      }
+    })
   },
   loadingText: {
     marginTop: 20,
@@ -641,6 +809,12 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 14,
     color: "#64748b",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#0F1A2F",
   },
 });
 

@@ -24,7 +24,7 @@ const AddItemDeliveryScreen: React.FC = () => {
     const tasks = storedTasks ? JSON.parse(storedTasks) : {};
 
     const updatedValues = {
-      entregas: tasks["delivery_task"] ?? 0,
+      entregas: tasks["delivery_entregas"] ?? 0,
     };
 
     console.log("📥 Valores reais carregados no AddItemLime:", updatedValues);
@@ -82,15 +82,12 @@ const AddItemDeliveryScreen: React.FC = () => {
 
     // Salvar tasks no objeto único
     const storedTasks = await AsyncStorage.getItem("TASKS");
-    const tasks = storedTasks ? JSON.parse(storedTasks) : {};
+  const tasks = storedTasks ? JSON.parse(storedTasks) : {};
 
-    Object.entries(adjustedCounts).forEach(([key, value]) => {
-      if (value !== 0) {
-        tasks[`delivery_${key}`] = (tasks[`delivery_${key}`] || 0) + value;
-      }
-    });
+  // 🚨 Usando a mesma chave que no DeliveryCard
+  tasks.delivery_entregas = (tasks.delivery_entregas || 0) + adjustedCounts.entregas;
 
-    await AsyncStorage.setItem("TASKS", JSON.stringify(tasks));
+  await AsyncStorage.setItem("TASKS", JSON.stringify(tasks));
 
     const currentLocation = await getCurrentLocation();
     if (!currentLocation) {

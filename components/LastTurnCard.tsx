@@ -1,9 +1,32 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, ActivityIndicator, Animated, Easing } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { 
+  View, 
+  Text, 
+  ScrollView, 
+  StyleSheet, 
+  ActivityIndicator, 
+  Dimensions 
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchLastShiftData } from '../scripts/LastShiftData';
+import { fetchMonthlyShiftData } from '../scripts/MonthlyShiftData';
 import { LinearGradient } from 'expo-linear-gradient';
-import Icon from 'react-native-vector-icons/MaterialIcons'; // Ícones do Material
+import { MaterialIcons } from '@expo/vector-icons';
+
+const { width } = Dimensions.get('window');
+const CARD_PADDING = 16;
+const CARD_MARGIN = 8;
+
+const COLORS = {
+  primary: '#0F1A2F',
+  secondary: '#3B82F6',
+  accent: '#60A5FA',
+  background: '#1E293B',
+  text: '#F8FAFC',
+  muted: '#64748B',
+  success: '#4ADE80',
+  error: '#F75555'
+};
 
 const TurnoCards: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -12,224 +35,278 @@ const TurnoCards: React.FC = () => {
     totalTasks: 0,
     avgKmPerTask: 0.0,
     avgTasksPerHour: 0.0,
-    kmVariation: 0,
-    tasksVariation: 0,
-    avgKmPerTaskDiff: 0.0,
-    avgTasksPerHourDiff: 0.0,
   });
-
-  const scrollX = useRef(new Animated.Value(0)).current;
+  const [monthlyData, setMonthlyData] = useState({
+    kmPercorridos: 0,
+    totalTasks: 0,
+    avgKmPerTask: 0.0,
+    avgTasksPerHour: 0.0,
+  });
 
   useEffect(() => {
     const loadShiftData = async () => {
-      const username = await AsyncStorage.getItem('USERNAME');
-      if (username) {
-        const data = await fetchLastShiftData(username);
-
-        // Calcula a variação comparando com os dados anteriores
-        setTurnData(prevState => ({
-          ...prevState,
-          ...data,
-          kmVariation: data.kmPercorridos - prevState.kmPercorridos,
-          tasksVariation: data.totalTasks - prevState.totalTasks,
-          avgKmPerTaskDiff: data.avgKmPerTask - prevState.avgKmPerTask,
-          avgTasksPerHourDiff: data.avgTasksPerHour - prevState.avgTasksPerHour,
-        }));
+      try {
+        const username = await AsyncStorage.getItem('USERNAME');
+        if (username) {
+          const [lastShift, monthly] = await Promise.all([
+            fetchLastShiftData(username),
+            fetchMonthlyShiftData()
+          ]);
+          
+          setTurnData(lastShift);
+          setMonthlyData(monthly);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar dados:', error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
-
     loadShiftData();
   }, []);
-  
-  useEffect(() => {
-    // 🔥 **Nova animação SUPER SUAVE** 🔥
-    Animated.sequence([
-      Animated.timing(scrollX, {
-        toValue: 50, // Move sutilmente para frente
-        duration: 1000, // 🔥 Aumenta a duração para ficar mais fluido
-        easing: Easing.inOut(Easing.quad), // 🔥 Deixa o movimento mais natural
-        useNativeDriver: false,
-      }),
-      Animated.timing(scrollX, {
-        toValue: 0, // Retorna ao início suavemente
-        duration: 1000,
-        easing: Easing.inOut(Easing.quad),
-        useNativeDriver: false,
-      }),
-    ]).start();
-  }, []);
 
-  // Define a cor da estatística com base na comparação entre Último Turno e Resumo Mensal
   const getComparisonColor = (lastTurnValue: number, monthlyAvg: number) => {
-    if (lastTurnValue > monthlyAvg) return '#4CAF50'; // Verde (melhor)
-    if (lastTurnValue < monthlyAvg) return '#F44336'; // Vermelho (pior)
-    return '#4CAF50'; // Branco (igual)
+    if (lastTurnValue > monthlyAvg) return COLORS.success;
+    if (lastTurnValue < monthlyAvg) return COLORS.error;
+    return COLORS.text;
   };
 
+  // Calcula as diferenças para o resumo mensal
+  const getMonthlyComparisons = () => ({
+    kmDiff: turnData.kmPercorridos,
+    tasksDiff: turnData.totalTasks,
+    avgTasksDiff: turnData.avgTasksPerHour - monthlyData.avgTasksPerHour,
+    avgKmDiff: turnData.avgKmPerTask - monthlyData.avgKmPerTask
+  });
+
   return (
-    <Animated.ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      style={[styles.scrollView, { transform: [{ translateX: scrollX }] }]} // Aplica a animação
+    <ScrollView 
+      style={styles.container}
+      contentContainerStyle={styles.contentContainer}
+      showsVerticalScrollIndicator={false}
     >
       {/* Card Resumo Mensal */}
-      <LinearGradient colors={['#2A2A2A', '#1A1A1A']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.card}>
-        <Text style={styles.cardTitle}>Resumo Mensal</Text>
+      <LinearGradient 
+        colors={[COLORS.primary, COLORS.background]}
+        start={{ x: 0.2, y: 0 }}
+        end={{ x: 0.8, y: 1 }}
+        style={[styles.card, styles.cardElevated]}
+      >
+        <View style={styles.sectionHeader}>
+          <MaterialIcons name="assessment" size={22} color={COLORS.secondary} />
+          <View style={styles.titleContainer}>
+            <Text style={styles.sectionMainTitle}>RESUMO MENSAL</Text>
+            <Text style={styles.sectionSubtitle}>Comparação com seu turno</Text>
+          </View>
+        </View>
         <View style={styles.divider} />
 
         {loading ? (
-          <ActivityIndicator size="large" color="#FFF" />
+          <ActivityIndicator size="large" color={COLORS.secondary} />
         ) : (
           <View style={styles.grid}>
-            <View style={styles.statItem}>
-              <Icon name="directions-car" size={24} color="#FFF" />
-              <Text style={styles.statLabel}>KM Percorridos</Text>
-              <Text style={styles.statValue}>{turnData.kmPercorridos} km</Text>
-              <Text style={[styles.variationRight, { color: turnData.kmVariation >= 0 ? '#4CAF50' : '#F44336' }]}>
-                {turnData.kmVariation >= 0 ? `+${turnData.kmVariation} km` : `${turnData.kmVariation} km`}
-              </Text>
-            </View>
-
-            <View style={styles.statItem}>
-              <Icon name="assignment" size={24} color="#FFF" />
-              <Text style={styles.statLabel}>Tarefas Feitas</Text>
-              <Text style={styles.statValue}>{turnData.totalTasks}</Text>
-              <Text style={[styles.variationRight, { color: turnData.tasksVariation >= 0 ? '#4CAF50' : '#F44336' }]}>
-                {turnData.tasksVariation >= 0 ? `+${turnData.tasksVariation}` : `${turnData.tasksVariation}`}
-              </Text>
-            </View>
-
-            <View style={styles.statItem}>
-              <Icon name="insert-chart" size={24} color="#FFF" />
-              <Text style={styles.statLabel}>Média Task/Hora</Text>
-              <Text style={styles.statValue}>{turnData.avgTasksPerHour.toFixed(2)}</Text>
-              <Text
-                style={[
-                  styles.variationRight,
-                  { color: getComparisonColor(turnData.avgTasksPerHour, turnData.avgTasksPerHourDiff) },
-                ]}
-              >
-                {turnData.avgTasksPerHourDiff >= 0 ? `${turnData.avgTasksPerHourDiff.toFixed(2)}` : `${turnData.avgTasksPerHourDiff.toFixed(2)}`}
-              </Text>
-            </View>
-
-            <View style={styles.statItem}>
-              <Icon name="local-shipping" size={24} color="#FFF" />
-              <Text style={styles.statLabel}>Média KM/Task</Text>
-              <Text style={styles.statValue}>{turnData.avgKmPerTask.toFixed(2)} km</Text>
-              <Text
-                style={[
-                  styles.variationRight,
-                  { color: getComparisonColor(turnData.avgKmPerTask, turnData.avgKmPerTaskDiff) },
-                ]}
-              >
-                {turnData.avgKmPerTaskDiff >= 0 ? `${turnData.avgKmPerTaskDiff.toFixed(2)}` : `${turnData.avgKmPerTaskDiff.toFixed(2)}`}
-              </Text>
-            </View>
+            {[
+              { 
+                icon: 'directions-car', 
+                label: 'KM Percorridos', 
+                value: monthlyData.kmPercorridos,
+                variation: getMonthlyComparisons().kmDiff
+              },
+              { 
+                icon: 'assignment', 
+                label: 'Tarefas Feitas', 
+                value: monthlyData.totalTasks,
+                variation: getMonthlyComparisons().tasksDiff
+              },
+              { 
+                icon: 'insert-chart', 
+                label: 'Média Task/Hora', 
+                value: monthlyData.avgTasksPerHour.toFixed(2),
+                diff: getMonthlyComparisons().avgTasksDiff
+              },
+              { 
+                icon: 'local-shipping', 
+                label: 'Média KM/Task', 
+                value: monthlyData.avgKmPerTask.toFixed(2),
+                diff: getMonthlyComparisons().avgKmDiff
+              },
+            ].map((item, index) => (
+              <View key={index} style={styles.statItem}>
+                <MaterialIcons 
+                  name={item.icon as keyof typeof MaterialIcons.glyphMap} 
+                  size={26} 
+                  color={COLORS.accent} 
+                  style={styles.statIcon}
+                />
+                <Text style={styles.statLabel}>{item.label}</Text>
+                <Text style={styles.statValue}>
+                  {item.value}
+                  {item.label.includes('KM') && ' km'}
+                </Text>
+                
+                {item.variation !== undefined ? (
+                  <Text style={[styles.variationBadge, { 
+                    // Sempre mostra +/- para KM e Tarefas
+                    color: COLORS.success // Verde padrão para valores positivos
+                  }]}>
+                    {item.variation >= 0 ? `+${item.variation}` : `${item.variation}`}
+                  </Text>
+                ) : (
+                  <Text style={[styles.variationBadge, { 
+                    // Lógica invertida para KM/Task
+                    color: item.label === 'Média KM/Task' 
+                      ? (item.diff <= 0 ? COLORS.success : COLORS.error)
+                      : (item.diff >= 0 ? COLORS.success : COLORS.error)
+                  }]}>
+                    {item.label === 'Média KM/Task' ? (
+                      item.diff <= 0 ? `↓ ${Math.abs(item.diff).toFixed(2)}` : `↑ ${item.diff.toFixed(2)}`
+                    ) : (
+                      item.diff >= 0 ? `↑ ${item.diff.toFixed(2)}` : `↓ ${Math.abs(item.diff).toFixed(2)}`
+                    )}
+                  </Text>
+                )}
+              </View>
+            ))}
           </View>
         )}
       </LinearGradient>
 
       {/* Card Último Turno */}
       <LinearGradient
-        colors={['#2A2A2A', '#1A1A1A']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.card}
+        colors={[COLORS.primary, COLORS.background]}
+        start={{ x: 0.2, y: 0 }}
+        end={{ x: 0.8, y: 1 }}
+        style={[styles.card, styles.cardElevated]}
       >
-        <Text style={styles.cardTitle}>Último Turno</Text>
+        <View style={styles.sectionHeader}>
+          <MaterialIcons name="history" size={22} color={COLORS.secondary} />
+          <View style={styles.titleContainer}>
+            <Text style={styles.sectionMainTitle}>ÚLTIMO TURNO</Text>
+            <Text style={styles.sectionSubtitle}>Seu desempenho recente</Text>
+          </View>
+        </View>
         <View style={styles.divider} />
 
         {loading ? (
-          <ActivityIndicator size="large" color="#FFF" />
+          <ActivityIndicator size="large" color={COLORS.secondary} />
         ) : (
           <View style={styles.grid}>
-            <View style={styles.statItem}>
-              <Icon name="directions-car" size={24} color="#FFF" />
-              <Text style={styles.statLabel}>KM Percorridos</Text>
-              <Text style={styles.statValue}>{turnData.kmPercorridos} km</Text>
-            </View>
-
-            <View style={styles.statItem}>
-              <Icon name="assignment" size={24} color="#FFF" />
-              <Text style={styles.statLabel}>Tarefas Feitas</Text>
-              <Text style={styles.statValue}>{turnData.totalTasks}</Text>
-            </View>
-
-            <View style={styles.statItem}>
-              <Icon name="insert-chart" size={24} color="#FFF" />
-              <Text style={styles.statLabel}>Média Task/Hora</Text>
-              <Text style={styles.statValue}>{turnData.avgTasksPerHour.toFixed(2)}</Text>
-            </View>
-
-            <View style={styles.statItem}>
-              <Icon name="local-shipping" size={24} color="#FFF" />
-              <Text style={styles.statLabel}>Média KM/Task</Text>
-              <Text style={styles.statValue}>{turnData.avgKmPerTask.toFixed(2)} km</Text>
-            </View>
+            {[
+              { icon: 'directions-car', label: 'KM Percorridos', value: turnData.kmPercorridos },
+              { icon: 'assignment', label: 'Tarefas Feitas', value: turnData.totalTasks },
+              { icon: 'insert-chart', label: 'Média Task/Hora', value: turnData.avgTasksPerHour.toFixed(2) },
+              { icon: 'local-shipping', label: 'Média KM/Task', value: turnData.avgKmPerTask.toFixed(2) },
+            ].map((item, index) => (
+              <View key={index} style={styles.statItem}>
+                <MaterialIcons 
+                  name={item.icon as keyof typeof MaterialIcons.glyphMap} 
+                  size={26} 
+                  color={COLORS.accent} 
+                  style={styles.statIcon}
+                />
+                <Text style={styles.statLabel}>{item.label}</Text>
+                <Text style={styles.statValue}>
+                  {item.value}
+                  {item.label.includes('KM') && ' km'}
+                </Text>
+              </View>
+            ))}
           </View>
         )}
       </LinearGradient>
-    </Animated.ScrollView>
+    </ScrollView>
   );
 };
 
-// 🎨 **Estilos Atualizados**
 const styles = StyleSheet.create({
-  scrollView: {
-    paddingVertical: 10,
+  container: {
+    flex: 1,
+  },
+  contentContainer: {
+    paddingHorizontal: CARD_PADDING,
+    paddingVertical: 16,
+    gap: 20,
+    alignItems: 'center',
   },
   card: {
-    borderRadius: 20,
+    borderRadius: 18,
     padding: 20,
-    width: 320,
-    marginRight: 16,
-    elevation: 8,
+    width: width - (CARD_PADDING * 2) - (CARD_MARGIN * 2),
+    backgroundColor: COLORS.background,
+    marginHorizontal: CARD_MARGIN,
+  },
+  cardElevated: {
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    alignSelf: 'flex-start',
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 8,
   },
-  cardTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#FFF',
-    marginBottom: 12,
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  titleContainer: {
+    marginLeft: 12,
+  },
+  sectionMainTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: COLORS.secondary,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  sectionSubtitle: {
+    fontSize: 13,
+    color: COLORS.muted,
+    fontWeight: '500',
+    marginTop: 4,
   },
   divider: {
     height: 1,
-    backgroundColor: '#444',
-    marginBottom: 16,
+    backgroundColor: COLORS.muted,
+    opacity: 0.25,
+    marginVertical: 14,
   },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    gap: 12,
   },
   statItem: {
     width: '48%',
-    marginBottom: 20,
-    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: 'rgba(15, 26, 47, 0.5)',
+    position: 'relative',
+    minHeight: 120,
+  },
+  statIcon: {
+    marginBottom: 8,
   },
   statLabel: {
     fontSize: 14,
-    color: '#BBB',
-    marginTop: 8,
+    color: COLORS.muted,
+    fontWeight: '600',
+    marginBottom: 4,
   },
   statValue: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFF',
-    marginTop: 4,
+    fontSize: 22,
+    fontWeight: '800',
+    color: COLORS.text,
   },
-  variationRight: {
+  variationBadge: {
     position: 'absolute',
-    right: 0,
-    top: 0,
-    fontSize: 12,
-    fontWeight: 'bold',
+    top: 14,
+    right: 14,
+    fontSize: 13,
+    fontWeight: '700',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
   },
 });
 

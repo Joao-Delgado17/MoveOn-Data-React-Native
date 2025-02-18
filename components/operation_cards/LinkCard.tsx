@@ -15,10 +15,10 @@ const LinkCard: React.FC<{ disabled?: boolean }> = ({ disabled = false }) => {
   const isFocused = useIsFocused();
 
   const [data, setData] = useState({
-    Deploy: 0,
-    Collect: 0,
-    Rebalance: 0,
-    Missing: 0,
+    deploy: 0,
+    collect: 0,
+    rebalance: 0,
+    missing: 0,
   });
 
   const [expanded, setExpanded] = useState(false); // Começa colapsado
