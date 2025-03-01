@@ -5,7 +5,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Location from "expo-location";
 import { LinearGradient } from "expo-linear-gradient";
 
-const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbxB32zacgHXsU_YqSzqi1NIrPaXNlWGOX_B0VIkfVEd-vY3_anM-SZnc_BWAlHfUlhu/exec";
+const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbwoyiWWxn95qvS1xF2PLsZGzWywL-z0Qh0F5m8LCKRd-qmXR8KtxZ8TqwrclYbAj0IV/exec";
 
 const AddItemLinkScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -80,7 +80,10 @@ const AddItemLinkScreen: React.FC = () => {
     if (isLoading) return;
     setIsLoading(true);
 
-    const currentTime = new Date().toLocaleString("pt-PT");
+    const now = new Date();
+    const dateString = now.toLocaleDateString("pt-PT"); // 📅 "05/01/2025"
+    const timeString = now.toLocaleTimeString("pt-PT"); // ⏰ "06:05:13"
+
     const username = (await AsyncStorage.getItem("USERNAME")) || "Desconhecido";
     const userCity = (await AsyncStorage.getItem("CITY")) || "Desconhecido";
 
@@ -119,7 +122,8 @@ const AddItemLinkScreen: React.FC = () => {
         .filter(([_, value]) => value !== 0)
         .map(([key, value]) => ({
           Utilizador: username,
-          Data: currentTime,
+          Data: dateString,       // 📅 Nova coluna Data
+          Hora: timeString,       // ⏰ Nova coluna Hora
           Cidade: userCity,
           Operador: "Link",
           Tarefa: formatLabel(key),

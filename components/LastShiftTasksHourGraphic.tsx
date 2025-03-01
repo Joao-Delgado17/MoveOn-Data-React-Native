@@ -24,34 +24,46 @@ const COLORS = {
   muted: '#64748B'
 };
 
+interface ChartData {
+  labels: string[];
+  values: number[];
+}
+
 const LastShiftTasksHourGraphic: React.FC = () => {
   const [loading, setLoading] = useState(true);
-  const [chartData, setChartData] = useState({
-    labels: ['00h', '04h', '08h', '12h', '16h', '20h'],
-    values: [0, 0, 0, 0, 0, 0],
+  const [chartData, setChartData] = useState<ChartData>({
+    labels: [],
+    values: [],
   });
 
-  const [averageData, setAverageData] = useState({
+  const [averageData, setAverageData] = useState<ChartData>({
     labels: ['Eu', 'Manhã', 'Tarde', 'Noite'],
     values: [0, 0, 0, 0],
   });
+
+  const [hasData, setHasData] = useState(false);
 
   useEffect(() => {
     const loadShiftData = async () => {
       try {
         const username = await AsyncStorage.getItem('USERNAME');
         if (username) {
-          const data = await fetchLastShiftTasksHourData(username);
-          setChartData(data);
+          // Carrega dados paralelamente
+          const [shiftData, warehouseData] = await Promise.all([
+            fetchLastShiftTasksHourData(username),
+            fetchWarehouseAverageTasksData()
+          ]);
 
-          const avgData = await fetchWarehouseAverageTasksData();
-          
-          if (avgData?.labels && avgData?.values) {
-            setAverageData(avgData);
-          } else {
+          // Atualiza gráfico principal
+          const validData = shiftData.values.some(v => v > 0);
+          setHasData(validData);
+          setChartData(shiftData);
+
+          // Atualiza dados comparativos
+          if (warehouseData?.labels && warehouseData?.values) {
             setAverageData({
-              labels: ['Eu', 'Manhã', 'Tarde', 'Noite'],
-              values: [0, 0, 0, 0],
+              labels: warehouseData.labels,
+              values: warehouseData.values.map(v => parseFloat(v.toFixed(1)))
             });
           }
         }
@@ -85,7 +97,7 @@ const LastShiftTasksHourGraphic: React.FC = () => {
 
         {loading ? (
           <ActivityIndicator size="large" color={COLORS.secondary} />
-        ) : (
+        ) : hasData ? (
           <BarChart
             data={{
               labels: chartData.labels,
@@ -103,6 +115,11 @@ const LastShiftTasksHourGraphic: React.FC = () => {
             verticalLabelRotation={0}
             showValuesOnTopOfBars
           />
+        ) : (
+          <View style={styles.noDataContainer}>
+            <MaterialIcons name="hourglass-empty" size={40} color={COLORS.muted} />
+            <Text style={styles.noDataText}>Nenhuma atividade registrada no último turno</Text>
+          </View>
         )}
       </View>
 
@@ -218,6 +235,17 @@ const styles = StyleSheet.create({
     color: COLORS.muted,
     fontWeight: '500',
     marginTop: 2,
+  },
+  noDataContainer: {
+    height: 200,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  noDataText: {
+    color: COLORS.muted,
+    fontSize: 16,
+    marginTop: 12,
+    textAlign: 'center',
   },
 });
 

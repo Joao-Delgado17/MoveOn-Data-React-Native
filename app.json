@@ -2,14 +2,22 @@
   "expo": {
     "name": "MoveOn",
     "slug": "MoveOn",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.jony17.MoveOn",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSLocationWhenInUseUsageDescription": "Esta app precisa de acesso à localização para registar tarefas corretamente.",
+        "NSLocationAlwaysUsageDescription": "A localização é necessária para rastreamento contínuo das operações.",
+        "NSCameraUsageDescription": "Esta app precisa de acesso à câmara para capturar fotos e digitalizar QR codes.",
+        "NSMicrophoneUsageDescription": "Esta app precisa de acesso ao microfone para gravar áudio durante a captura de vídeos."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -36,6 +44,14 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {
+        "origin": false
+      },
+      "eas": {
+        "projectId": "e4b5a8a7-63c4-4cde-818e-77a2a404686c"
+      }
     }
   }
 }

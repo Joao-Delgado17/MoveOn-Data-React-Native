@@ -104,72 +104,82 @@ const TurnoCards: React.FC = () => {
         {loading ? (
           <ActivityIndicator size="large" color={COLORS.secondary} />
         ) : (
-          <View style={styles.grid}>
-            {[
-              { 
-                icon: 'directions-car', 
-                label: 'KM Percorridos', 
-                value: monthlyData.kmPercorridos,
-                variation: getMonthlyComparisons().kmDiff
-              },
-              { 
-                icon: 'assignment', 
-                label: 'Tarefas Feitas', 
-                value: monthlyData.totalTasks,
-                variation: getMonthlyComparisons().tasksDiff
-              },
-              { 
-                icon: 'insert-chart', 
-                label: 'Média Task/Hora', 
-                value: monthlyData.avgTasksPerHour.toFixed(2),
-                diff: getMonthlyComparisons().avgTasksDiff
-              },
-              { 
-                icon: 'local-shipping', 
-                label: 'Média KM/Task', 
-                value: monthlyData.avgKmPerTask.toFixed(2),
-                diff: getMonthlyComparisons().avgKmDiff
-              },
-            ].map((item, index) => (
-              <View key={index} style={styles.statItem}>
-                <MaterialIcons 
-                  name={item.icon as keyof typeof MaterialIcons.glyphMap} 
-                  size={26} 
-                  color={COLORS.accent} 
-                  style={styles.statIcon}
-                />
-                <Text style={styles.statLabel}>{item.label}</Text>
-                <Text style={styles.statValue}>
-                  {item.value}
-                  {item.label.includes('KM') && ' km'}
+          // Verifica se há dados válidos para o mês atual
+          (monthlyData.kmPercorridos === 0 && monthlyData.totalTasks === 0)
+            ? (
+              <View style={{ padding: 16 }}>
+                <Text style={{ color: COLORS.muted, textAlign: 'center' }}>
+                  Nenhum turno encontrado neste mês.
                 </Text>
-                
-                {item.variation !== undefined ? (
-                  <Text style={[styles.variationBadge, { 
-                    // Sempre mostra +/- para KM e Tarefas
-                    color: COLORS.success // Verde padrão para valores positivos
-                  }]}>
-                    {item.variation >= 0 ? `+${item.variation}` : `${item.variation}`}
-                  </Text>
-                ) : (
-                  <Text style={[styles.variationBadge, { 
-                    // Lógica invertida para KM/Task
-                    color: item.label === 'Média KM/Task' 
-                      ? (item.diff <= 0 ? COLORS.success : COLORS.error)
-                      : (item.diff >= 0 ? COLORS.success : COLORS.error)
-                  }]}>
-                    {item.label === 'Média KM/Task' ? (
-                      item.diff <= 0 ? `↓ ${Math.abs(item.diff).toFixed(2)}` : `↑ ${item.diff.toFixed(2)}`
-                    ) : (
-                      item.diff >= 0 ? `↑ ${item.diff.toFixed(2)}` : `↓ ${Math.abs(item.diff).toFixed(2)}`
-                    )}
-                  </Text>
-                )}
               </View>
-            ))}
-          </View>
+            ) : (
+              // Caso haja dados, renderiza a grid normalmente
+              <View style={styles.grid}>
+                {[
+                  { 
+                    icon: 'directions-car', 
+                    label: 'KM Percorridos', 
+                    value: monthlyData.kmPercorridos,
+                    variation: getMonthlyComparisons().kmDiff
+                  },
+                  { 
+                    icon: 'assignment', 
+                    label: 'Tarefas Feitas', 
+                    value: monthlyData.totalTasks,
+                    variation: getMonthlyComparisons().tasksDiff
+                  },
+                  { 
+                    icon: 'insert-chart', 
+                    label: 'Média Task/Hora', 
+                    value: monthlyData.avgTasksPerHour.toFixed(2),
+                    diff: getMonthlyComparisons().avgTasksDiff
+                  },
+                  { 
+                    icon: 'local-shipping', 
+                    label: 'Média KM/Task', 
+                    value: monthlyData.avgKmPerTask.toFixed(2),
+                    diff: getMonthlyComparisons().avgKmDiff
+                  },
+                ].map((item, index) => (
+                  <View key={index} style={styles.statItem}>
+                    <MaterialIcons 
+                      name={item.icon as keyof typeof MaterialIcons.glyphMap} 
+                      size={26} 
+                      color={COLORS.accent} 
+                      style={styles.statIcon}
+                    />
+                    <Text style={styles.statLabel}>{item.label}</Text>
+                    <Text style={styles.statValue}>
+                      {item.value}
+                      {item.label.includes('KM') && ' km'}
+                    </Text>
+                    
+                    {/* Renderiza a badge de variação (comparação) */}
+                    {item.variation !== undefined ? (
+                      <Text style={[styles.variationBadge, { color: COLORS.success }]}>
+                        {item.variation >= 0 ? `+${item.variation}` : `${item.variation}`}
+                      </Text>
+                    ) : (
+                      <Text style={[styles.variationBadge, {
+                        color: (
+                          item.label === 'Média KM/Task'
+                            ? (item.diff <= 0 ? COLORS.success : COLORS.error)
+                            : (item.diff >= 0 ? COLORS.success : COLORS.error)
+                        )
+                      }]}>
+                        {item.label === 'Média KM/Task'
+                          ? (item.diff <= 0 ? `↓ ${Math.abs(item.diff).toFixed(2)}` : `↑ ${item.diff.toFixed(2)}`)
+                          : (item.diff >= 0 ? `↑ ${item.diff.toFixed(2)}` : `↓ ${Math.abs(item.diff).toFixed(2)}`)
+                        }
+                      </Text>
+                    )}
+                  </View>
+                ))}
+              </View>
+            )
         )}
       </LinearGradient>
+
 
       {/* Card Último Turno */}
       <LinearGradient

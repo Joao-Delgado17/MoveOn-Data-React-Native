@@ -6,7 +6,7 @@ import * as Location from "expo-location";
 import { LinearGradient } from "expo-linear-gradient"; // Gradiente de fundo
 
 // 🔗 URL da API do Google Sheets
-const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbxB32zacgHXsU_YqSzqi1NIrPaXNlWGOX_B0VIkfVEd-vY3_anM-SZnc_BWAlHfUlhu/exec";
+const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbwoyiWWxn95qvS1xF2PLsZGzWywL-z0Qh0F5m8LCKRd-qmXR8KtxZ8TqwrclYbAj0IV/exec";
 
 const AddItemBirdScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -83,9 +83,17 @@ const AddItemBirdScreen: React.FC = () => {
     if (isLoading) return;
     setIsLoading(true);
 
-    const currentTime = new Date().toLocaleString("pt-PT");
+    const now = new Date();
+    const dateString = now.toLocaleDateString("pt-PT"); // 📅 "05/01/2025"
+    const timeString = now.toLocaleTimeString("pt-PT"); // ⏰ "06:05:13"
+
     const username = (await AsyncStorage.getItem("USERNAME")) || "Desconhecido";
     const userCity = (await AsyncStorage.getItem("CITY")) || "Desconhecido";
+
+    console.log("🔍 Username:", username);
+    console.log("🔍 Cidade:", userCity);
+    console.log("🔍 Data:", dateString);
+    console.log("🔍 Hora:", timeString);
 
     const updatedValues = { ...currentValues };
 
@@ -93,6 +101,8 @@ const AddItemBirdScreen: React.FC = () => {
       const newValue = updatedValues[key as keyof typeof updatedValues] + value;
       updatedValues[key as keyof typeof updatedValues] = Math.max(0, newValue);
     });
+
+    console.log("📥 Valores atualizados:", updatedValues);
 
     await Promise.all(
       Object.entries(updatedValues).map(([key, value]) => AsyncStorage.setItem(`bird_${key}`, value.toString()))
@@ -110,6 +120,8 @@ const AddItemBirdScreen: React.FC = () => {
 
     await AsyncStorage.setItem("TASKS", JSON.stringify(tasks));
 
+    console.log("📥 TASKS Salvas:", tasks);
+
     // 🔹 Obter localização antes de enviar para o Google Sheets
     const currentLocation = await getCurrentLocation();
     if (!currentLocation) {
@@ -124,7 +136,8 @@ const AddItemBirdScreen: React.FC = () => {
         .filter(([_, value]) => value !== 0)
         .map(([key, value]) => ({
           Utilizador: username,
-          Data: currentTime,
+          Data: dateString,       // 📅 Nova coluna Data
+          Hora: timeString,       // ⏰ Nova coluna Hora
           Cidade: userCity,
           Operador: "Bird",
           Tarefa: formatLabel(key),
@@ -133,6 +146,8 @@ const AddItemBirdScreen: React.FC = () => {
           Longitude: currentLocation.longitude,
         })),
     };
+
+    console.log("📤 Enviando logs corrigidos:", JSON.stringify(logs, null, 2));
 
     const body = JSON.stringify(logs);
 
