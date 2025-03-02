@@ -158,7 +158,6 @@ const AddItemLimeScreen: React.FC = () => {
       console.log("📥 Resposta da API:", result);
   
       if (result.success) {
-        Alert.alert("Sucesso", "Tarefa registrada com sucesso!");
         navigation.goBack();
       } else {
         Alert.alert("Erro", "A API rejeitou os dados. Verifica os logs.");
@@ -176,7 +175,7 @@ const AddItemLimeScreen: React.FC = () => {
     <LinearGradient colors={["#1A1A1A", "#2A2A2A"]} style={styles.container}>
       <Text style={styles.title}>Tarefas Lime</Text>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {Object.entries(adjustedCounts).map(([key, value]) => (
           <View key={key} style={styles.card}>
             <Text style={styles.label}>{formatLabel(key)}</Text>
@@ -203,9 +202,9 @@ const AddItemLimeScreen: React.FC = () => {
 
 const formatLabel = (key: string) => {
   const labels: Record<string, string> = {
-    collectTroti: "Collect Troti",
-    rebalanceTroti: "Rebalance Troti",
-    missingTroti: "Missing Troti",
+    collectTroti: "Collect Scooter",
+    rebalanceTroti: "Rebalance Scooter",
+    missingTroti: "Missing Scooter",
     collectBike: "Collect Bike",
     rebalanceBike: "Rebalance Bike",
     missingBike: "Missing Bike",

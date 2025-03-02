@@ -169,7 +169,6 @@ const AddItemRidemoviScreen: React.FC = () => {
       console.log("📥 Resposta da API:", result);
 
       if (result.success) {
-        Alert.alert("Sucesso", "Tarefa registrada com sucesso!");
         navigation.goBack();
       } else {
         Alert.alert("Erro", "A API rejeitou os dados. Verifica os logs.");
@@ -186,7 +185,7 @@ const AddItemRidemoviScreen: React.FC = () => {
     <LinearGradient colors={["#1A1A1A", "#2A2A2A"]} style={styles.container}>
       <Text style={styles.title}>Tarefas Ridemovi</Text>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {Object.entries(adjustedCounts).map(([key, value]) => (
           <View key={key} style={styles.card}>
             <Text style={styles.label}>{formatLabel(key)}</Text>
@@ -213,7 +212,7 @@ const AddItemRidemoviScreen: React.FC = () => {
 
 const formatLabel = (key: string) => {
   const labels: Record<string, string> = {
-    deploy: "deploy",
+    deploy: "Deploy",
     collect: "Collect",
     rebalance: "Rebalance",
     swap: "Swap",
@@ -276,7 +275,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   button: {
-    backgroundColor: "#32CD32",
+    backgroundColor: "#FF4500",
     borderRadius: 10,
     paddingVertical: 12,
     paddingHorizontal: 20,

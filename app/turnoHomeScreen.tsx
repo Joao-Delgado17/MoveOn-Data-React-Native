@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useLayoutEffect } from "react";
 import {
   View,
   Text,
@@ -94,6 +94,13 @@ const TurnoHomeScreen: React.FC = () => {
   const [isKmFocused, setIsKmFocused] = useState(false);
   const [isNotesFocused, setIsNotesFocused] = useState(false);
 
+  // Correção do hook usando useLayoutEffect
+  useLayoutEffect(() => {
+    navigation.getParent()?.setOptions({
+      gestureEnabled: false,
+      animation: 'none'
+    });
+  }, [navigation]);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -198,7 +205,6 @@ const TurnoHomeScreen: React.FC = () => {
         await AsyncStorage.setItem("warehouseStartTime", Date.now().toString());
         await AsyncStorage.setItem("isWarehouseActive", "true");
         setIsWarehouseActive(true);
-        Alert.alert("Saída Registrada", "Bom trabalho!");
       } else {
         const warehouseStartTime = parseInt((await AsyncStorage.getItem("warehouseStartTime")) || "0");
         const elapsed = Date.now() - warehouseStartTime;
@@ -208,7 +214,6 @@ const TurnoHomeScreen: React.FC = () => {
           ["isWarehouseActive", "false"],
         ]);
         setIsWarehouseActive(false);
-        Alert.alert("Chegada Registrada", "Bem-vindo de volta!");
       }
     } catch (error) {
       Alert.alert("Erro", "Não foi possível registrar a ação.");
@@ -233,7 +238,7 @@ const TurnoHomeScreen: React.FC = () => {
       if (status !== "granted") throw new Error("Permissão da câmera negada");
   
       const result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
+        allowsEditing: false,
         aspect: [4, 3],
         quality: 0.8,
       });
@@ -254,6 +259,7 @@ const TurnoHomeScreen: React.FC = () => {
   if (!validateForm()) return;
 
   setIsLoading(true);
+  setModalVisible(false);
   await new Promise(resolve => setTimeout(resolve, 50));
 
   try {
@@ -311,7 +317,7 @@ const validateForm = () => {
   const kmFinalNumber = parseInt(kmFinal, 10);
   
   if (!kmFinal.trim() || isNaN(kmFinalNumber)) {
-      Alert.alert("❌ Valor Inválido", "Insira uma quilometragem válida.");
+      Alert.alert("❌ Campo Obrigatório", "Preencha o campo de Kms.");
       return false;
   }
 
@@ -547,7 +553,7 @@ const validateForm = () => {
       >
         <View style={styles.loadingOverlay}>
           <View style={styles.loadingCard}>
-            <ActivityIndicator size="large" color="#3b82f6" />
+            <ActivityIndicator size="large" color={Platform.OS === 'ios' ? '#000' : '#3b82f6'} />
             <Text style={styles.loadingText}>A processar...</Text>
             <Text style={styles.loadingSubtext}>Por favor aguarde</Text>
           </View>
@@ -778,6 +784,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 9999,
     backgroundColor: Platform.select({
       ios: 'rgba(0,0,0,0.6)', // Aumente a opacidade
       android: 'rgba(15,23,42,0.9)'

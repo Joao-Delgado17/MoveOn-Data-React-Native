@@ -161,9 +161,6 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
     color: "#FFF",
-    textShadowColor: "rgba(0, 0, 0, 0.5)",
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 2,
   },
   table: {
     marginTop: 8,
@@ -178,7 +175,6 @@ const styles = StyleSheet.create({
   cell: {
     fontSize: 16,
     color: "#FFF",
-    fontWeight: "500",
   },
   value: {
     fontSize: 16,

@@ -133,7 +133,6 @@ const AddItemMechanicScreen: React.FC = () => {
 
       const result = await response.json();
       if (result.success) {
-        Alert.alert("Sucesso", "Tarefa registrada com sucesso!");
         navigation.goBack();
       } else {
         Alert.alert("Erro", "A API rejeitou os dados.");
@@ -150,7 +149,7 @@ const AddItemMechanicScreen: React.FC = () => {
     <LinearGradient colors={["#1A1A1A", "#2A2A2A"]} style={styles.container}>
       <Text style={styles.title}>Tarefas Mecânico</Text>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {Object.entries(adjustedCounts).map(([key, value]) => (
           <View key={key} style={styles.card}>
             <Text style={styles.label}>{formatLabel(key)}</Text>
@@ -181,7 +180,13 @@ const AddItemMechanicScreen: React.FC = () => {
 };
 
 const formatLabel = (key: string) => {
-  return key.replace(/([A-Z])/g, " $1").trim();
+
+  const spaced = key.replace(/([A-Z])/g, ' $1'); // Passo 1
+  const words = spaced.split(' ');
+  const pascalCased = words.map(
+    w => w.charAt(0).toUpperCase() + w.slice(1)
+  );
+  return pascalCased.join(' ').trim(); // "Rebalance Virtual"
 };
 
 const styles = StyleSheet.create({
@@ -232,7 +237,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   button: {
-    backgroundColor: "#FFA500",
+    backgroundColor: "#424242",
     borderRadius: 10,
     paddingVertical: 12,
     paddingHorizontal: 20,

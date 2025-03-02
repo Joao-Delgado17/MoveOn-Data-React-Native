@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { 
   View, Text, TextInput, Alert, StyleSheet, TouchableOpacity, 
-  Keyboard, TouchableWithoutFeedback, ActivityIndicator
+  Keyboard, TouchableWithoutFeedback, ActivityIndicator, Platform 
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { Picker } from '@react-native-picker/picker';
 import { MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
+import RNPickerSelect from 'react-native-picker-select';
 import { fetchVehicles } from '../../scripts/GetCarrinhas';
 
 const StartShiftScreen: React.FC = () => {
@@ -128,7 +129,7 @@ const StartShiftScreen: React.FC = () => {
                     style={styles.picker}
                   >
                     {vehicles.map((item) => (
-                      <Picker.Item key={item} label={item} value={item} color="#F8FAFC" />
+                      <Picker.Item key={item} label={item} value={item}  color={Platform.OS === 'ios' ? '#F8FAFC' : '#000000'} />
                     ))}
                   </Picker>
                 </View>

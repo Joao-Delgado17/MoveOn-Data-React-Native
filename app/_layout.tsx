@@ -4,6 +4,7 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
+import { Platform } from "react-native";
 import "react-native-reanimated";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -42,7 +43,16 @@ export default function RootLayout() {
             {/* Bloqueia voltar no TurnoHomeScreen */}
             <Stack.Screen
               name="TurnoHomeScreen"
-              options={{ title: "Turno Ativo", gestureEnabled: false }}
+              options={{ 
+                title: "Turno Ativo", 
+                gestureEnabled: false, // Desabilita gesto
+                // Configurações específicas para iOS
+                ...(Platform.OS === 'ios' && {
+                  gestureDirection: 'vertical', // Altera direção do gesto
+                  animation: 'none', // Remove animação de deslize
+                  customAnimationOnGesture: false
+                })
+              }}
             />
 
             {/* Permite voltar nos AddItemXScreen */}
