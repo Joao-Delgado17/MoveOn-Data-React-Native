@@ -120,12 +120,17 @@ const exportToGoogleSheets = async (imageDriveLinks: string[], tasks: Record<str
       "Rebalance Bolt": getTaskValue("bolt_rebalance"),
       "Swap Bolt": getTaskValue("bolt_swap"),
       "Missing Bolt": getTaskValue("bolt_missing"),
+
+      "Collect Bird EBike": getTaskValue("bird_collectEBike"),
+      "Rebalance Bird EBike": getTaskValue("bird_rebalanceEBike"),
+      "Swap Bird EBike": getTaskValue("bird_swapEBike"),
+      "Missing Bird EBike": getTaskValue("bird_missingEBike"),
     };
 
     console.log("📡 Enviando dados do turno:", JSON.stringify(turnoPayload, null, 2));
 
     // 📌 Envia os dados para a API do Google Sheets
-    const turnoResponse = await fetch("https://script.google.com/macros/s/AKfycbw-dd2Wmi-rgdS9l5KfO1uLaRBiMt7E0FRGaEBehsTZnYyJ_TdA36UtCRxJ2Ey-skx9/exec", {
+    const turnoResponse = await fetch("https://script.google.com/macros/s/AKfycbw6uGmudJeX8vyyDFyhiyLbNzOlcxKfY9Zeha2rKDi_aWqDwprfKME8tpX-3rjkboNS/exec", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(turnoPayload),

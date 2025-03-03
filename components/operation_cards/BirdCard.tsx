@@ -20,10 +20,14 @@ const BirdCard: React.FC<{ disabled?: boolean }> = ({ disabled = false }) => {
     rebalance: 0,
     rebalanceVirtual: 0,
     missing: 0,
+    collectEBike: 0,
+    rebalanceEBike: 0,
+    swapEBike: 0,
+    missingEBike: 0,
   });
 
   const [expanded, setExpanded] = useState(false); // Começa colapsado
-  const animatedHeight = new Animated.Value(expanded ? 250 : 80); // Altura animada
+  const animatedHeight = new Animated.Value(expanded ? 400 : 80); // Altura animada
 
   useEffect(() => {
     const loadData = async () => {
@@ -59,7 +63,7 @@ const BirdCard: React.FC<{ disabled?: boolean }> = ({ disabled = false }) => {
   const toggleExpand = () => {
     setExpanded(!expanded);
     Animated.timing(animatedHeight, {
-      toValue: expanded ? 80 : 250, // Alterna altura
+      toValue: expanded ? 80 : 400, // Alterna altura
       duration: 300,
       useNativeDriver: false,
     }).start();
@@ -108,11 +112,15 @@ const BirdCard: React.FC<{ disabled?: boolean }> = ({ disabled = false }) => {
 
 const formatLabel = (key: string) => {
   const labels: Record<string, string> = {
-    Deploy: "Deploy",
-    Collect: "Collect",
-    Rebalance: "Rebalance",
-    RebalanceVirtual: "Rebalance Virtual",
-    Missing: "Missing",
+    deploy: "Deploy Troti",
+    collect: "Collect Troti",
+    rebalance: "Rebalance Troti",
+    rebalanceVirtual: "Rebalance Virtual Troti",
+    missing: "Missing Troti",
+    collectEBike: "Collect E-Bike",
+    rebalanceEBike: "Rebalance E-Bike",
+    swapEBike: "Swap E-Bike",
+    missingEBike: "Missing E-Bike",
   };
   return labels[key] || key;
 };

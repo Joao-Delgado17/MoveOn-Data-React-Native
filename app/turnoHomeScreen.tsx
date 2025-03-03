@@ -94,14 +94,6 @@ const TurnoHomeScreen: React.FC = () => {
   const [isKmFocused, setIsKmFocused] = useState(false);
   const [isNotesFocused, setIsNotesFocused] = useState(false);
 
-  // Correção do hook usando useLayoutEffect
-  useLayoutEffect(() => {
-    navigation.getParent()?.setOptions({
-      gestureEnabled: false,
-      animation: 'none'
-    });
-  }, [navigation]);
-
   useFocusEffect(
     React.useCallback(() => {
       const onBackPress = () => true;
@@ -422,6 +414,10 @@ const validateForm = () => {
           <>
             <BirdCard disabled={!isWarehouseActive} />
             <BoltCard disabled={!isWarehouseActive} />
+          </>
+        ) : city === "Figueira_da_Foz" ? (
+          <>
+            <BirdCard disabled={!isWarehouseActive} />
           </>
         ) : city === "Santarem_TorresVedras" ? (
           <>

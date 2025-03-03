@@ -113,17 +113,17 @@ const RidemoviCard: React.FC<{ disabled?: boolean }> = ({ disabled = false }) =>
 
 const formatLabel = (key: string) => {
   const labels: Record<string, string> = {
-    Deploy: "Deploy",
-    Collect: "Collect",
-    Rebalance: "Rebalance",
-    Swap: "Swap",
-    SwapRebalance: "Swap Rebalance",
-    Reparking: "Reparking",
-    SpecialRecovery: "Special Recovery",
-    OutsideFixed: "Outside Fixed",
-    OutsideFixedSwap: "Outside Fixed Swap",
-    OutsideFixedSwapRebalance: "Outside Fixed Swap Rebalance",
-    Missing: "Missing",
+    deploy: "Deploy",
+    collect: "Collect",
+    rebalance: "Rebalance",
+    swap: "Swap",
+    swapRebalance: "Swap Rebalance",
+    reparking: "Reparking",
+    specialRecovery: "Special Recovery",
+    outsideFixed: "Outside Fixed",
+    outsideFixedSwap: "Outside Fixed Swap",
+    outsideFixedSwapRebalance: "Outside Fixed Swap Rebalance",
+    missing: "Missing",
   };
   return labels[key] || key;
 };

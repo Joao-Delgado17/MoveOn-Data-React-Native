@@ -7,7 +7,7 @@ export const fetchMonthlyShiftData = async () => {
       throw new Error("❌ Username não encontrado no AsyncStorage");
     }
 
-    const url = `https://script.google.com/macros/s/AKfycbxtbAzKNP9y31jllkjssZEwUx3s9JKJnMe8lrTdTEVFCm-YMsSCIOAxK1VWk07rQK7E/exec?username=${encodeURIComponent(username)}`;
+    const url = `https://script.google.com/macros/s/AKfycbxVUw-oaub27fEhk3OVdot6GZXW2PrdRkfvuKcKPGqwFPbQyyYyPiV4LENX_zy8eC9O/exec?username=${encodeURIComponent(username)}`;
     console.log("📡 URL da API:", url);
 
     const response = await fetch(url);

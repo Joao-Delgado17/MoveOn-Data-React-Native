@@ -107,10 +107,10 @@ const LinkCard: React.FC<{ disabled?: boolean }> = ({ disabled = false }) => {
 
 const formatLabel = (key: string) => {
   const labels: Record<string, string> = {
-    Deploy: "Deploy",
-    Collect: "Collect",
-    Rebalance: "Rebalance",
-    Missing: "Missing",
+    deploy: "Deploy",
+    collect: "Collect",
+    rebalance: "Rebalance",
+    missing: "Missing",
   };
   return labels[key] || key;
 };

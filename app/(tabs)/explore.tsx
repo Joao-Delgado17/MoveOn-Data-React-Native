@@ -54,7 +54,7 @@ const StartShiftScreen: React.FC = () => {
         ["startTime", startTime.toString()],
         ["isTurnActive", "true"]
       ]);
-      router.push("/turnoHomeScreen");
+      router.replace("/turnoHomeScreen");
       return;
     }
 
@@ -71,7 +71,7 @@ const StartShiftScreen: React.FC = () => {
         ["startTime", startTime.toString()],
         ["isTurnActive", "true"],
       ]);
-      router.push("/turnoHomeScreen");
+      router.replace("/turnoHomeScreen");
     } catch (error) {
       Alert.alert("Erro", "Não foi possível iniciar o turno.");
     }

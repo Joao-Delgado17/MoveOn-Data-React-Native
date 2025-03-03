@@ -1,6 +1,6 @@
 const GOOGLE_SHEETS_API_KEY = 'AIzaSyCwljm0hqbJtkQN6uFjPAeVxtX6CuI2fPQ'; // API key do Google Sheets
 const SHEET_ID = '1_17ujg_-bt3LdYR4Ie9tQgR_sdV9154XOFKCgjL__rU';
-const RANGE = 'Drivers!A2:AT'; // Define o intervalo de dados
+const RANGE = 'Drivers!A2:AX'; // Define o intervalo de dados
 
 export const fetchLastShiftData = async (username: string) => {
   try {
@@ -22,13 +22,19 @@ export const fetchLastShiftData = async (username: string) => {
     if (lastShift) {
       const kmInicial = parseInt(lastShift[8]) || 0;
       const kmFinal = parseInt(lastShift[9]) || 0;
-      const totalTasks = lastShift.slice(15, 46).reduce((sum: number, value: string) => sum + (parseInt(value) || 0), 0);
+      const totalTasks = lastShift.slice(15, 50).reduce((sum: number, value: string) => sum + (parseInt(value) || 0), 0);
+
+      const shiftDurationStr = lastShift[6] || "00:00:00"; // Formato esperado: "HH:MM:SS"
+      const shiftDurationHours = parseShiftDuration(shiftDurationStr); // Converter para número de horas
+
+      console.log("🔍 Tarefas extraídas:", lastShift.slice(15, lastShift.length));
+      console.log("📊 Total calculado:", totalTasks);
 
       return {
         kmPercorridos: kmFinal - kmInicial,
         totalTasks,
         avgKmPerTask: totalTasks > 0 ? (kmFinal - kmInicial) / totalTasks : 0,
-        avgTasksPerHour: totalTasks / 8,
+        avgTasksPerHour: shiftDurationHours > 0 ? totalTasks / shiftDurationHours : 0,
         kmVariation: 0, // 🔹 Valor padrão
         tasksVariation: 0,
         avgKmPerTaskDiff: 0.0,
@@ -42,6 +48,11 @@ export const fetchLastShiftData = async (username: string) => {
     console.error('Erro ao buscar dados do Google Sheets:', error);
     return getDefaultShiftData();
   }
+};
+
+const parseShiftDuration = (timeString: string) => {
+  const [hours, minutes, seconds] = timeString.split(":").map(Number);
+  return hours + minutes / 60 + seconds / 3600;
 };
 
 // Função para retornar valores padrão caso a API falhe ou não encontre dados

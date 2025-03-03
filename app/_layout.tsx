@@ -44,14 +44,15 @@ export default function RootLayout() {
             <Stack.Screen
               name="TurnoHomeScreen"
               options={{ 
-                title: "Turno Ativo", 
-                gestureEnabled: false, // Desabilita gesto
-                // Configurações específicas para iOS
-                ...(Platform.OS === 'ios' && {
-                  gestureDirection: 'vertical', // Altera direção do gesto
-                  animation: 'none', // Remove animação de deslize
-                  customAnimationOnGesture: false
-                })
+                title: "Turno Ativo",
+                // ✅ Configurações para iOS
+                ...(Platform.OS === 'ios' ? {
+                  gestureDirection: 'vertical', // Gesto vertical (não interfere no swipe back)
+                  animation: 'none',            // Remove animação de transição
+                  presentation: 'modal'   
+                } : {}),
+                // ✅ Configurações para Android
+                gestureEnabled: false,          // Desativa gestos completamente
               }}
             />
 

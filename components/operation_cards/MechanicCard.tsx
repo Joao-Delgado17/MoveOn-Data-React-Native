@@ -97,8 +97,8 @@ const MechanicCard: React.FC<{ disabled?: boolean }> = ({ disabled = false }) =>
 // Função para formatar os nomes das chaves
 const formatLabel = (key: string) => {
   const labels: Record<string, string> = {
-    TrotinetesReparadas: "Trotinetes Reparadas",
-    BicicletasReparadas: "Bicicletas Reparadas",
+    trotinetesReparadas: "Trotinetes Reparadas",
+    bicicletasReparadas: "Bicicletas Reparadas",
   };
   return labels[key] || key;
 };

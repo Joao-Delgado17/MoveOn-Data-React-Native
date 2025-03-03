@@ -18,6 +18,10 @@ const AddItemBirdScreen: React.FC = () => {
     rebalance: 0,
     rebalanceVirtual: 0,
     missing: 0,
+    collectEBike: 0,
+    rebalanceEBike: 0,
+    swapEBike: 0,
+    missingEBike: 0,
   });
 
   const [adjustedCounts, setAdjustedCounts] = useState({
@@ -26,6 +30,10 @@ const AddItemBirdScreen: React.FC = () => {
     rebalance: 0,
     rebalanceVirtual: 0,
     missing: 0,
+    collectEBike: 0,
+    rebalanceEBike: 0,
+    swapEBike: 0,
+    missingEBike: 0,
   });
 
   const loadCurrentValues = async () => {
@@ -38,9 +46,13 @@ const AddItemBirdScreen: React.FC = () => {
       rebalance: tasks["bird_rebalance"] ?? 0,
       rebalanceVirtual: tasks["bird_rebalanceVirtual"] ?? 0,
       missing: tasks["bird_missing"] ?? 0,
+      collectEBike: tasks["bird_collectEBike"] ?? 0,
+      rebalanceEBike: tasks["bird_rebalanceEBike"] ?? 0,
+      swapEBike: tasks["bird_swapEBike"] ?? 0,
+      missingEBike: tasks["bird_missingEBike"] ?? 0,
     };
 
-    console.log("📥 Valores reais carregados no AddItemLime:", updatedValues);
+    console.log("📥 Valores reais carregados no AddItemBird:", updatedValues);
     setCurrentValues(updatedValues);
   };
 

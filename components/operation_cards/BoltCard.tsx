@@ -108,11 +108,11 @@ const BoltCard: React.FC<{ disabled?: boolean }> = ({ disabled = false }) => {
 
 const formatLabel = (key: string) => {
   const labels: Record<string, string> = {
-    Deploy: "Deploy",
-    Collect: "Collect",
-    Rebalance: "Rebalance",
-    Swap: "Swap",
-    Missing: "Missing",
+    deploy: "Deploy",
+    collect: "Collect",
+    rebalance: "Rebalance",
+    swap: "Swap",
+    missing: "Missing",
   };
   return labels[key] || key;
 };
