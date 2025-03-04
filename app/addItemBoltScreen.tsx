@@ -53,7 +53,7 @@ const AddItemBoltScreen: React.FC = () => {
 
   // 🔹 Atualizar valores ao clicar nos botões
   const updateCount = (field: keyof typeof adjustedCounts, value: number) => {
-    setAdjustedCounts((prev) => ({ ...prev, [field]: Math.max(0, value) }));
+    setAdjustedCounts((prev) => ({ ...prev, [field]: value })); // Permite valores negativos
   };
 
   const getCurrentLocation = async () => {
@@ -124,10 +124,8 @@ const AddItemBoltScreen: React.FC = () => {
     const storedTasks = await AsyncStorage.getItem("TASKS");
     const tasks = storedTasks ? JSON.parse(storedTasks) : {};
   
-    Object.entries(adjustedCounts).forEach(([key, value]) => {
-      if (value !== 0) {
-        tasks[`bolt_${key}`] = (tasks[`bolt_${key}`] || 0) + value;
-      }
+    Object.entries(updatedValues).forEach(([key, value]) => {
+      tasks[`bolt_${key}`] = value; // Valor garantido >= 0
     });
   
     await AsyncStorage.setItem("TASKS", JSON.stringify(tasks));

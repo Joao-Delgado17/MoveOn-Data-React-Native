@@ -41,7 +41,7 @@ const AddItemDeliveryScreen: React.FC = () => {
 
   // 🔹 Atualizar estado dos inputs
   const updateCount = (field: keyof typeof adjustedCounts, value: number) => {
-    setAdjustedCounts((prev) => ({ ...prev, [field]: Math.max(0, value) }));
+    setAdjustedCounts((prev) => ({ ...prev, [field]: value })); // Permite valores negativos
   };
 
   const getCurrentLocation = async () => {
@@ -77,20 +77,21 @@ const AddItemDeliveryScreen: React.FC = () => {
 
     const updatedValues = { ...currentValues };
     Object.entries(adjustedCounts).forEach(([key, value]) => {
-      const newValue = updatedValues[key as keyof typeof updatedValues] + value;
-      updatedValues[key as keyof typeof updatedValues] = Math.max(0, newValue);
+      const field = key as keyof typeof updatedValues; // 🔹 Type assertion
+      const newValue = updatedValues[field] + value;
+      updatedValues[field] = Math.max(0, newValue);
     });
 
     await AsyncStorage.setItem("delivery_Entregas", updatedValues.entregas.toString());
 
     // Salvar tasks no objeto único
     const storedTasks = await AsyncStorage.getItem("TASKS");
-  const tasks = storedTasks ? JSON.parse(storedTasks) : {};
+    const tasks = storedTasks ? JSON.parse(storedTasks) : {};
 
-  // 🚨 Usando a mesma chave que no DeliveryCard
-  tasks.delivery_entregas = (tasks.delivery_entregas || 0) + adjustedCounts.entregas;
+    // 🚨 Usando a mesma chave que no DeliveryCard
+    tasks.delivery_entregas = updatedValues.entregas; 
 
-  await AsyncStorage.setItem("TASKS", JSON.stringify(tasks));
+    await AsyncStorage.setItem("TASKS", JSON.stringify(tasks));
 
     const currentLocation = await getCurrentLocation();
     if (!currentLocation) {

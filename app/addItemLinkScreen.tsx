@@ -53,7 +53,7 @@ const AddItemLinkScreen: React.FC = () => {
 
   // 🔹 Atualizar estado dos inputs
   const updateCount = (field: keyof typeof adjustedCounts, value: number) => {
-    setAdjustedCounts((prev) => ({ ...prev, [field]: Math.max(0, value) }));
+    setAdjustedCounts((prev) => ({ ...prev, [field]: value })); // Permite valores negativos
   };
 
   const getCurrentLocation = async () => {
@@ -102,10 +102,8 @@ const AddItemLinkScreen: React.FC = () => {
     const storedTasks = await AsyncStorage.getItem("TASKS");
     const tasks = storedTasks ? JSON.parse(storedTasks) : {};
 
-    Object.entries(adjustedCounts).forEach(([key, value]) => {
-      if (value !== 0) {
-        tasks[`link_${key}`] = (tasks[`link_${key}`] || 0) + value;
-      }
+    Object.entries(updatedValues).forEach(([key, value]) => {
+      tasks[`link_${key}`] = value; // Valor garantido >= 0
     });
 
     await AsyncStorage.setItem("TASKS", JSON.stringify(tasks));

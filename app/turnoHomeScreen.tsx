@@ -83,7 +83,7 @@ const TurnoHomeScreen: React.FC = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [kmFinal, setKmFinal] = useState("");
   const [notes, setNotes] = useState("");
-  const [images, setImages] = useState<string[]>([]);
+  const [images, setImages] = useState<(string | null)[]>([null, null, null, null]);
   const [isLoading, setIsLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [currentPhotoStep, setCurrentPhotoStep] = useState(0);
@@ -223,8 +223,6 @@ const TurnoHomeScreen: React.FC = () => {
   };
 
   const capturePhoto = async () => {
-    if (images.length >= 4) return;
-  
     try {
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       if (status !== "granted") throw new Error("Permissão da câmera negada");
@@ -236,14 +234,23 @@ const TurnoHomeScreen: React.FC = () => {
       });
   
       if (!result.canceled && result.assets?.[0]?.uri) {
-        setImages(prev => [...prev, result.assets[0].uri]);
-        setCurrentPhotoStep(prev => Math.min(prev + 1, 3));
+        setImages(prev => {
+          const newImages = [...prev];
+          newImages[currentPhotoStep] = result.assets[0].uri;
+          
+          // 🔍 Procura a PRÓXIMA posição vazia a partir do INÍCIO
+          const nextEmptyIndex = newImages.findIndex(img => img === null);
+          setCurrentPhotoStep(nextEmptyIndex !== -1 ? nextEmptyIndex : 3);
+          
+          return newImages;
+        });
+  
+        // Encontra a próxima posição vazia
+        const nextEmptyIndex = images.findIndex((img, idx) => idx > currentPhotoStep && img === null);
+        setCurrentPhotoStep(nextEmptyIndex !== -1 ? nextEmptyIndex : currentPhotoStep + 1);
       }
     } catch (error) {
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : "Falha ao capturar foto";
-      Alert.alert("Erro", errorMessage);
+      Alert.alert("Erro", "Falha ao capturar foto");
     }
   };
   
@@ -256,8 +263,11 @@ const TurnoHomeScreen: React.FC = () => {
 
   try {
     const userType = (await AsyncStorage.getItem("USER_TYPE")) || "driver"; // Padrão para driver
-    const imageLinks = (await Promise.all(images.map(uploadToFirebase)))
-      .filter((link): link is string => link !== null);
+    const imageLinks = (await Promise.all(
+      images
+        .filter((img): img is string => img !== null) // 🔹 Remove nulls e tipa como string[]
+        .map(uploadToFirebase)
+    )).filter((link): link is string => link !== null);
 
       if (userType !== "mechanic" && images.length !== 4) {
         Alert.alert("Erro", "O upload de algumas imagens falhou");
@@ -327,36 +337,57 @@ const validateForm = () => {
       }
   }
 
-  if (images.length !== 4) {
+  const allPhotosTaken = images.every(img => img !== null);
+    if (!allPhotosTaken) {
       Alert.alert("⚠️ Fotos Incompletas", "Capture todas as 4 fotos obrigatórias.");
       return false;
-  }
+    }
 
   return true;
 };
 
+const removeImage = (index: number) => {
+  setImages(prev => {
+    const newImages = [...prev];
+    newImages[index] = null;
+    
+    // 🔍 Encontra a PRIMEIRA posição vazia com o estado ATUALIZADO
+    const nextEmptyIndex = newImages.findIndex(img => img === null);
+    setCurrentPhotoStep(nextEmptyIndex !== -1 ? nextEmptyIndex : 3);
+    
+    return newImages;
+  });
+};
 
-  const PhotoGrid = () => (
-    <View style={styles.photoGrid}>
-      {PHOTO_ANGLES.map((angle, index) => (
-        <View key={angle.key} style={styles.photoCell}>
-          {images[index] ? (
-            <Image source={{ uri: images[index] }} style={styles.photo} />
-          ) : (
-            <View style={[styles.photoPlaceholder, angle.style]}>
-              <FontAwesome5 name={angle.icon} size={28} color="#64748b" />
-              <Text style={styles.photoLabel}>{angle.title}</Text>
-              {index === currentPhotoStep && (
-                <View style={styles.photoBadge}>
-                  <Text style={styles.badgeText}>!</Text>
-                </View>
-              )}
-            </View>
-          )}
-        </View>
-      ))}
-    </View>
-  );
+const PhotoGrid = () => (
+  <View style={styles.photoGrid}>
+    {PHOTO_ANGLES.map((angle, index) => (
+      <View key={angle.key} style={styles.photoCell}>
+        {images[index] ? (
+          <View style={styles.photoContainer}>
+            <Image source={{ uri: images[index]! }} style={styles.photo} />
+            <TouchableOpacity 
+              style={styles.removeButton} 
+              onPress={() => removeImage(index)}
+            >
+              <MaterialIcons name="close" size={20} color="white" />
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={[styles.photoPlaceholder, angle.style]}>
+            <FontAwesome5 name={angle.icon} size={28} color="#64748b" />
+            <Text style={styles.photoLabel}>{angle.title}</Text>
+            {index === currentPhotoStep && (
+              <View style={styles.photoBadge}>
+                <Text style={styles.badgeText}>!</Text>
+              </View>
+            )}
+          </View>
+        )}
+      </View>
+    ))}
+  </View>
+);
 
   if (loading) {
     return (
@@ -501,22 +532,22 @@ const validateForm = () => {
 
                 {userType !== "mechanic" && (
                   <TouchableOpacity 
-                    style={[styles.actionButton, styles.cameraButton]}
-                    onPress={capturePhoto}
-                    disabled={images.length >= 4}
-                  >
-                    <MaterialIcons 
-                      name="photo-camera" 
-                      size={24} 
-                      color={images.length >= 4 ? "#94a3b8" : "white"} 
-                    />
-                    <Text style={[
-                      styles.buttonText, 
-                      images.length >= 4 && styles.disabledText
-                    ]}>
-                      {images.length >= 4 ? 'Completo' : 'Capturar Foto'}
-                    </Text>
-                  </TouchableOpacity>
+                  style={[styles.actionButton, styles.cameraButton]}
+                  onPress={capturePhoto}
+                  disabled={images.filter(img => img !== null).length === 4} // ✅ Nova condição
+                >
+                  <MaterialIcons 
+                    name="photo-camera" 
+                    size={24} 
+                    color={images.filter(img => img !== null).length === 4 ? "#94a3b8" : "white"} 
+                  />
+                  <Text style={[
+                    styles.buttonText, 
+                    images.filter(img => img !== null).length === 4 && styles.disabledText
+                  ]}>
+                    {images.filter(img => img !== null).length === 4 ? 'Completo' : 'Capturar Foto'}
+                  </Text>
+                </TouchableOpacity>
                 )}
 
                 <View style={styles.confirmationGroup}>
@@ -726,6 +757,19 @@ const styles = StyleSheet.create({
   photo: {
     width: "100%",
     height: "100%",
+  },
+  photoContainer: {
+    position: 'relative',
+    width: '100%',
+    height: '100%',
+  },
+  removeButton: {
+    position: 'absolute',
+    top: 5,
+    right: 5,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderRadius: 10,
+    padding: 4,
   },
   buttonGroup: {
     gap: 12,

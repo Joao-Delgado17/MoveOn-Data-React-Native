@@ -59,7 +59,7 @@ const AddItemLimeScreen: React.FC = () => {
 
   // 🔹 Atualizar estado dos inputs
   const updateCount = (field: keyof typeof adjustedCounts, value: number) => {
-    setAdjustedCounts((prev) => ({ ...prev, [field]: Math.max(0, value) }));
+    setAdjustedCounts((prev) => ({ ...prev, [field]: value })); // Permite valores negativos
   };
 
   // 🔹 Capturar a localização do usuário
@@ -110,10 +110,8 @@ const AddItemLimeScreen: React.FC = () => {
     const storedTasks = await AsyncStorage.getItem("TASKS");
     const tasks = storedTasks ? JSON.parse(storedTasks) : {};
   
-    Object.entries(adjustedCounts).forEach(([key, value]) => {
-      if (value !== 0) {
-        tasks[`lime_${key}`] = (tasks[`lime_${key}`] || 0) + value; // Incrementa os valores corretamente
-      }
+    Object.entries(updatedValues).forEach(([key, value]) => {
+      tasks[`lime_${key}`] = value; // Valor garantido >= 0
     });
   
     await AsyncStorage.setItem("TASKS", JSON.stringify(tasks));

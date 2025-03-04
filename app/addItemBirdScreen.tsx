@@ -124,10 +124,8 @@ const AddItemBirdScreen: React.FC = () => {
     const storedTasks = await AsyncStorage.getItem("TASKS");
     const tasks = storedTasks ? JSON.parse(storedTasks) : {};
 
-    Object.entries(adjustedCounts).forEach(([key, value]) => {
-      if (value !== 0) {
-        tasks[`bird_${key}`] = (tasks[`bird_${key}`] || 0) + value; // Incrementa os valores corretamente
-      }
+    Object.entries(updatedValues).forEach(([key, value]) => {
+      tasks[`bird_${key}`] = value; // Valor garantido >= 0
     });
 
     await AsyncStorage.setItem("TASKS", JSON.stringify(tasks));

@@ -53,7 +53,9 @@ const exportToGoogleSheets = async (imageDriveLinks: string[], tasks: Record<str
     }
 
     // 📌 Links das imagens
-    const imageLinksString = imageDriveLinks.length > 0 ? imageDriveLinks.join("\n") : "Sem imagens";
+    const imageLinksString = imageDriveLinks.length > 0 
+      ? imageDriveLinks.map(link => `=HYPERLINK("${link}", "Ver Foto")`).join("\n") 
+      : "Sem imagens";
 
     // 📌 Recuperar as tasks corretamente
     const storedTasks = await AsyncStorage.getItem("TASKS");

@@ -69,9 +69,18 @@ const StartScreen: React.FC = () => {
         <View style={styles.fixedHeader}>
           <View style={styles.header}>
             <View style={styles.profileContainer}>
-              <Icon name="person" size={28} color={COLORS.text} style={styles.profileIcon} />
+              <Icon name="person" size={26} color={COLORS.text} style={styles.profileIcon} />
               <View>
-                <Text style={styles.title}>{username || 'Usuário'}</Text>
+                <Text 
+                  style={[
+                    styles.title,
+                    
+                  ]} 
+                  numberOfLines={1} 
+                  ellipsizeMode="tail"
+                >
+                  {username || 'Usuário'}
+                </Text>
                 <View style={styles.locationContainer}>
                   <Icon name="location-on" size={16} color={COLORS.muted} />
                   <Text style={styles.subtitle}>{city || 'Localização desconhecida'}</Text>
@@ -80,8 +89,7 @@ const StartScreen: React.FC = () => {
             </View>
 
             <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-              <Icon name="logout" size={20} color={COLORS.text} />
-              <Text style={styles.logoutText}>Sair</Text>
+              <Icon name="logout" size={18} color={COLORS.text} />
             </TouchableOpacity>
           </View>
 
@@ -165,8 +173,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   profileContainer: {
+    flex: 1, // 🔄 Ocupa espaço disponível
     flexDirection: 'row',
     alignItems: 'center',
+    minWidth: '60%', // ✅ Garante espaço mínimo para o texto
   },
   profileIcon: {
     backgroundColor: COLORS.background,
@@ -175,8 +185,8 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   title: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 15,
+    fontWeight: '600',
     color: COLORS.text,
   },
   locationContainer: {

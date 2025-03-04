@@ -15,7 +15,7 @@ const uploadToFirebase = async (imageUri: string): Promise<string | null> => {
     // 🔹 Faz o upload com progresso
     const uploadTask = uploadBytesResumable(storageRef, blob, { contentType: "image/jpeg" });
 
-    await new Promise((resolve, reject) => {
+    return new Promise((resolve, reject) => {
       uploadTask.on(
         "state_changed",
         (snapshot) => {
@@ -24,7 +24,7 @@ const uploadToFirebase = async (imageUri: string): Promise<string | null> => {
         },
         (error) => {
           console.error(`❌ Erro no upload de ${fileName}:`, error);
-          reject(error);
+          reject(null);
         },
         async () => {
           const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
@@ -33,8 +33,6 @@ const uploadToFirebase = async (imageUri: string): Promise<string | null> => {
         }
       );
     });
-
-    return await getDownloadURL(storageRef);
   } catch (error) {
     console.error("❌ Erro ao fazer upload para o Firebase:", error);
     return null;
