@@ -2,7 +2,7 @@
   "expo": {
     "name": "MoveOn",
     "slug": "MoveOn",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
@@ -13,6 +13,7 @@
       "bundleIdentifier": "com.jony17.MoveOn",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Your combined location usage description here",
         "NSLocationWhenInUseUsageDescription": "Esta app precisa de acesso à localização para registar tarefas corretamente.",
         "NSLocationAlwaysUsageDescription": "A localização é necessária para rastreamento contínuo das operações.",
         "NSCameraUsageDescription": "Esta app precisa de acesso à câmara para capturar fotos e digitalizar QR codes.",
