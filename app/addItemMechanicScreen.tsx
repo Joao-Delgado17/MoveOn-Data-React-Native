@@ -12,13 +12,21 @@ const AddItemMechanicScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const [currentValues, setCurrentValues] = useState({
-    trotinetesReparadas: 0,
-    bicicletasReparadas: 0,
+    trotinetesReparadasBird: 0,
+    trotinetesReparadasBolt: 0,
+    trotinetesReparadasSonae: 0,
+    bicicletasReparadasBird: 0,
+    bicicletasReparadasBolt: 0,
+    bicicletasReparadasSonae: 0,
   });
-
+  
   const [adjustedCounts, setAdjustedCounts] = useState({
-    trotinetesReparadas: 0,
-    bicicletasReparadas: 0,
+    trotinetesReparadasBird: 0,
+    trotinetesReparadasBolt: 0,
+    trotinetesReparadasSonae: 0,
+    bicicletasReparadasBird: 0,
+    bicicletasReparadasBolt: 0,
+    bicicletasReparadasSonae: 0,
   });
 
   // 🔹 Carregar valores do AsyncStorage ao iniciar
@@ -27,8 +35,12 @@ const AddItemMechanicScreen: React.FC = () => {
     const tasks = storedTasks ? JSON.parse(storedTasks) : {};
   
     const updatedValues = {
-      trotinetesReparadas: tasks["mechanic_trotinetesReparadas"] ?? 0,  // 🔥 Corrigido para minúsculas
-      bicicletasReparadas: tasks["mechanic_bicicletasReparadas"] ?? 0,  // 🔥 Corrigido para minúsculas
+      trotinetesReparadasBird: tasks["mechanic_trotinetesReparadasBird"] ?? 0,
+      trotinetesReparadasBolt: tasks["mechanic_trotinetesReparadasBolt"] ?? 0,
+      trotinetesReparadasSonae: tasks["mechanic_trotinetesReparadasSonae"] ?? 0,
+      bicicletasReparadasBird: tasks["mechanic_bicicletasReparadasBird"] ?? 0,
+      bicicletasReparadasBolt: tasks["mechanic_bicicletasReparadasBolt"] ?? 0,
+      bicicletasReparadasSonae: tasks["mechanic_bicicletasReparadasSonae"] ?? 0,
     };
   
     console.log("📥 Valores reais carregados no AddItemMechanicScreen:", updatedValues);
@@ -178,13 +190,12 @@ const AddItemMechanicScreen: React.FC = () => {
 };
 
 const formatLabel = (key: string) => {
-
-  const spaced = key.replace(/([A-Z])/g, ' $1'); // Passo 1
-  const words = spaced.split(' ');
-  const pascalCased = words.map(
-    w => w.charAt(0).toUpperCase() + w.slice(1)
-  );
-  return pascalCased.join(' ').trim(); // "Rebalance Virtual"
+  const parts = key.replace('trotinetesReparadas', '')
+                   .replace('bicicletasReparadas', '')
+                   .replace(/([A-Z])/g, ' $1');
+  return key.startsWith('trotinetes') 
+    ? `Trotinetes ${parts.trim()}`
+    : `Bicicletas ${parts.trim()}`;
 };
 
 const styles = StyleSheet.create({

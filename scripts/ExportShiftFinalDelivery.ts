@@ -12,6 +12,8 @@ const exportDeliveriesToGoogleSheets = async (imageDriveLinks: string[]) => {
     const notes = (await AsyncStorage.getItem("notes")) || "Sem notas";
     const startTimeStr = (await AsyncStorage.getItem("startTime")) || "";
     const endTimeStr = Date.now().toString();
+    const startDateStr = (await AsyncStorage.getItem("startTime")) || "";
+    const endDateStr = Date.now().toString();
     const carrinha = (await AsyncStorage.getItem("carrinha")) || "N/A";
 
     const warehouseStartTimeStr = (await AsyncStorage.getItem("warehouseStartTime")) || "0";
@@ -64,10 +66,10 @@ const exportDeliveriesToGoogleSheets = async (imageDriveLinks: string[]) => {
     const deliveryPayload = {
       username,
       city,
-      dataInicio,
+      dataInicio: startDateStr,
       horaInicio,
       horaFim,
-      dataFim,
+      dataFim: endDateStr,
       duration,
       carrinha,
       kmInicial,
@@ -83,7 +85,7 @@ const exportDeliveriesToGoogleSheets = async (imageDriveLinks: string[]) => {
     console.log("📡 Enviando dados de entregas:", JSON.stringify(deliveryPayload, null, 2));
 
     // 📌 Envia os dados para a API do Google Sheets
-    const response = await fetch("https://script.google.com/macros/s/AKfycbweiump41kd2QHCd7LKwHDcg3OtC9l58Q5KWOE7D93TtmDQvs3N9NwEhwjr0-rNPiaN/exec", {
+    const response = await fetch("https://script.google.com/macros/s/AKfycbzG2hfnThZDRqrDsoa0BiWowTeroQJkqExwVVDpKfwWWm66SPGBq48mCHM4gxKrvGR0/exec", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(deliveryPayload),

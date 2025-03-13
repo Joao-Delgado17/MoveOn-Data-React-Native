@@ -9,6 +9,8 @@ const exportMechanicToGoogleSheets = async () => {
     const city = (await AsyncStorage.getItem("CITY")) || "N/A";
     const startTimeStr = (await AsyncStorage.getItem("startTime")) || "";
     const endTimeStr = Date.now().toString();
+    const startDateStr = (await AsyncStorage.getItem("startTime")) || "";
+    const endDateStr = Date.now().toString();
     const notes = (await AsyncStorage.getItem("notes")) || "Sem notas";
 
     // 📌 Formatação correta da data e hora
@@ -28,25 +30,35 @@ const exportMechanicToGoogleSheets = async () => {
     // 📌 Recuperar as tarefas do mecânico
     const storedTasks = await AsyncStorage.getItem("TASKS");
     const savedTasks = storedTasks ? JSON.parse(storedTasks) : {};
-    const trotineteReparadas = savedTasks["mechanic_trotinetesReparadas"] ?? 0;
-    const bicicletasReparadas = savedTasks["mechanic_bicicletasReparadas"] ?? 0;
+    const trotinetesBird = savedTasks["mechanic_trotinetesReparadasBird"] ?? 0;
+    const trotinetesBolt = savedTasks["mechanic_trotinetesReparadasBolt"] ?? 0;
+    const trotinetesSonae = savedTasks["mechanic_trotinetesReparadasSonae"] ?? 0;
+    const bikesBird = savedTasks["mechanic_bicicletasReparadasBird"] ?? 0;
+    const bikesBolt = savedTasks["mechanic_bicicletasReparadasBolt"] ?? 0;
+    const bikesSonae = savedTasks["mechanic_bicicletasReparadasSonae"] ?? 0;
 
     // 🛠️ **DADOS FORMATADOS PARA ENVIO**
     const mechanicPayload = {
       username,
       city,
+      dataInicio: startDateStr,
       horaInicio,
       horaFim,
+      dataFim: endDateStr,
       duration,
       notes,
-      trotineteReparadas,
-      bicicletasReparadas,
+      trotinetesBird,
+      trotinetesBolt,
+      trotinetesSonae,
+      bikesBird,
+      bikesBolt,
+      bikesSonae,
     };
 
     console.log("📡 Enviando dados do mecânico:", JSON.stringify(mechanicPayload, null, 2));
 
     // 📌 Envia os dados para a API do Google Sheets
-    const response = await fetch("https://script.google.com/macros/s/AKfycbxxwHdqYeRQW0EtUtRg1WguX-uSg30JbY9nbp-zgEylxTSI6to-oqGrpCpeiNeUWY4/exec", {
+    const response = await fetch("https://script.google.com/macros/s/AKfycbyEC6_foA9XYqRvEFNT4eeoBAh62AzFomLXMHJxfsh6d81tcmlxA4F_I7pK5lD3Ih_5/exec", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(mechanicPayload),

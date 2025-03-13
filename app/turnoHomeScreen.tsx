@@ -26,6 +26,7 @@ import exportDeliveriesToGoogleSheets from "../scripts/ExportShiftFinalDelivery"
 import exportMechanicToGoogleSheets from "../scripts/ExportShiftFinalMechanic";
 import uploadToFirebase from "../scripts/uploadImagesToGoogleDrive";
 import { exportWarehouseLog } from "../scripts/ExportWarehouseButtonLog";
+import { exportShiftLog } from "../scripts/ExportShiftButtonLog";
 
 // Components
 import LimeCard from "../components/operation_cards/LimeCard";
@@ -269,12 +270,11 @@ const TurnoHomeScreen: React.FC = () => {
         .map(uploadToFirebase)
     )).filter((link): link is string => link !== null);
 
-      if (userType !== "mechanic" && images.length !== 4) {
-        Alert.alert("Erro", "O upload de algumas imagens falhou");
-        return;
-      }
-      
-
+    if (userType !== "mechanic" && images.length !== 4) {
+      Alert.alert("Erro", "O upload de algumas imagens falhou");
+      return;
+    }
+  
     await AsyncStorage.multiSet([
       ["kmFinal", kmFinal],
       ["notes", notes],
@@ -288,6 +288,9 @@ const TurnoHomeScreen: React.FC = () => {
     } else if (userType === "mechanic") {
       await exportMechanicToGoogleSheets();
     }
+
+    // 🔥 Regista o fim do turno com o novo tipo de registo
+    await exportShiftLog("Fim Turno");
 
     await AsyncStorage.multiRemove([
       "isTurnActive", "startTime", "kmInicial",

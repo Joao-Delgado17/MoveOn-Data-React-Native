@@ -15,12 +15,16 @@ const MechanicCard: React.FC<{ disabled?: boolean }> = ({ disabled = false }) =>
   const isFocused = useIsFocused();
 
   const [data, setData] = useState({
-    trotinetesReparadas: 0,
-    bicicletasReparadas: 0,
+    trotinetesReparadasBird: 0,
+    trotinetesReparadasBolt: 0,
+    trotinetesReparadasSonae: 0,
+    bicicletasReparadasBird: 0,
+    bicicletasReparadasBolt: 0,
+    bicicletasReparadasSonae: 0,
   });
 
   const [expanded, setExpanded] = useState(false); // Começa colapsado
-  const animatedHeight = new Animated.Value(expanded ? 150 : 80); // Altura animada
+  const animatedHeight = new Animated.Value(expanded ? 280 : 80); // Altura animada
 
   useEffect(() => {
     const loadData = async () => {
@@ -28,8 +32,12 @@ const MechanicCard: React.FC<{ disabled?: boolean }> = ({ disabled = false }) =>
       const tasks = storedTasks ? JSON.parse(storedTasks) : {};
   
       const updatedValues = {
-        trotinetesReparadas: tasks["mechanic_trotinetesReparadas"] ?? 0,  // 🔥 Mesmo nome do AddItem
-        bicicletasReparadas: tasks["mechanic_bicicletasReparadas"] ?? 0,  // 🔥 Mesmo nome do AddItem
+        trotinetesReparadasBird: tasks["mechanic_trotinetesReparadasBird"] ?? 0,
+        trotinetesReparadasBolt: tasks["mechanic_trotinetesReparadasBolt"] ?? 0,
+        trotinetesReparadasSonae: tasks["mechanic_trotinetesReparadasSonae"] ?? 0,
+        bicicletasReparadasBird: tasks["mechanic_bicicletasReparadasBird"] ?? 0,
+        bicicletasReparadasBolt: tasks["mechanic_bicicletasReparadasBolt"] ?? 0,
+        bicicletasReparadasSonae: tasks["mechanic_bicicletasReparadasSonae"] ?? 0,
       };
   
       console.log("📥 Dados carregados no MechanicCard:", updatedValues); // 🔥 Log para depuração
@@ -50,7 +58,7 @@ const MechanicCard: React.FC<{ disabled?: boolean }> = ({ disabled = false }) =>
   const toggleExpand = () => {
     setExpanded(!expanded);
     Animated.timing(animatedHeight, {
-      toValue: expanded ? 80 : 150, // Alterna altura
+      toValue: expanded ? 80 : 280, // Alterna altura
       duration: 300,
       useNativeDriver: false,
     }).start();
@@ -75,7 +83,7 @@ const MechanicCard: React.FC<{ disabled?: boolean }> = ({ disabled = false }) =>
 
             {!expanded ? (
               <Text style={styles.totalText}>
-                Total: {data.trotinetesReparadas + data.bicicletasReparadas} reparos
+                Total: {Object.values(data).reduce((a, b) => a + b, 0)} reparos
               </Text>
             ) : (
               <View style={styles.table}>
@@ -97,8 +105,12 @@ const MechanicCard: React.FC<{ disabled?: boolean }> = ({ disabled = false }) =>
 // Função para formatar os nomes das chaves
 const formatLabel = (key: string) => {
   const labels: Record<string, string> = {
-    trotinetesReparadas: "Trotinetes Reparadas",
-    bicicletasReparadas: "Bicicletas Reparadas",
+    trotinetesReparadasBird: "Trotinetes Bird",
+    trotinetesReparadasBolt: "Trotinetes Bolt",
+    trotinetesReparadasSonae: "Trotinetes Sonae",
+    bicicletasReparadasBird: "Bikes Bird",
+    bicicletasReparadasBolt: "Bikes Bolt",
+    bicicletasReparadasSonae: "Bikes Sonae",
   };
   return labels[key] || key;
 };

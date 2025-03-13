@@ -9,6 +9,7 @@ import { Picker } from '@react-native-picker/picker';
 import { MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
 import RNPickerSelect from 'react-native-picker-select';
 import { fetchVehicles } from '../../scripts/GetCarrinhas';
+import { exportShiftLog } from "../../scripts/ExportShiftButtonLog";
 
 const StartShiftScreen: React.FC = () => {
   const [kmInicial, setKmInicial] = useState('');
@@ -55,6 +56,10 @@ const StartShiftScreen: React.FC = () => {
         ["isTurnActive", "true"]
       ]);
       router.replace("/turnoHomeScreen");
+
+      // 🚀 Regista o início do turno para outros utilizadores
+      await exportShiftLog("Início Turno");
+      
       return;
     }
 
@@ -71,6 +76,10 @@ const StartShiftScreen: React.FC = () => {
         ["startTime", startTime.toString()],
         ["isTurnActive", "true"],
       ]);
+
+      // 🚀 Regista o início do turno para outros utilizadores
+      await exportShiftLog("Início Turno");
+
       router.replace("/turnoHomeScreen");
     } catch (error) {
       Alert.alert("Erro", "Não foi possível iniciar o turno.");
