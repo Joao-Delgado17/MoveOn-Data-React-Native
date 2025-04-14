@@ -1,8 +1,8 @@
 {
   "expo": {
     "name": "MoveOn",
-    "slug": "MoveOn",
-    "version": "1.0.5",
+    "slug": "moveon-app",
+    "version": "1.0.6",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "myapp",
@@ -52,8 +52,9 @@
         "origin": false
       },
       "eas": {
-        "projectId": "e4b5a8a7-63c4-4cde-818e-77a2a404686c"
+        "projectId": "f6adb29e-551c-4105-82eb-217d591cb5f9"
       }
-    }
+    },
+    "owner": "rafael.anunciada"
   }
 }
