@@ -1,2 +1,2 @@
 // filepath: /Users/anunciada/Desktop/MoveOn-Data/api.ts
-export const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbzAg8nwm-R_iHpkLwbkkYK7q-FrHhUkp8bkRbZ01WRHwmYXflgQS-ZLOCXtpfsBZ5Bp/exec";
+export const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbyrPt1gsJx6qJlkCLtNDF2BooQWBRZ5twVsEjGo2UNgPkGmqxzX-xFGgObsb5gWESqm/exec";

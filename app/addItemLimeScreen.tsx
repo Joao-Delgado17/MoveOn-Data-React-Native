@@ -13,11 +13,13 @@ const AddItemLimeScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const [currentValues, setCurrentValues] = useState({
+    deployTroti: 0,
     swapTroti: 0,
     outsideFixTroti: 0,
     collectTroti: 0,
     rebalanceTroti: 0,
     missingTroti: 0,
+    deployBike: 0,
     swapBike: 0,
     outsideFixBike: 0,
     collectBike: 0,
@@ -26,11 +28,13 @@ const AddItemLimeScreen: React.FC = () => {
   });
 
   const [adjustedCounts, setAdjustedCounts] = useState({
+    deployTroti: 0,
     swapTroti: 0,
     outsideFixTroti: 0,
     collectTroti: 0,
     rebalanceTroti: 0,
     missingTroti: 0,
+    deployBike: 0,
     swapBike: 0,
     outsideFixBike: 0,
     collectBike: 0,
@@ -45,11 +49,13 @@ const AddItemLimeScreen: React.FC = () => {
     const tasks = storedTasks ? JSON.parse(storedTasks) : {};
 
     const updatedValues = {
+      deployTroti: tasks["lime_deployTroti"] ?? 0,
       swapTroti: tasks["lime_swapTroti"] ?? 0,
       outsideFixTroti: tasks["lime_outsideFixTroti"] ?? 0,
       collectTroti: tasks["lime_collectTroti"] ?? 0,
       rebalanceTroti: tasks["lime_rebalanceTroti"] ?? 0,
       missingTroti: tasks["lime_missingTroti"] ?? 0,
+      deployBike: tasks["lime_deployBike"] ?? 0,
       swapBike: tasks["lime_swapBike"] ?? 0,
       outsideFixBike: tasks["lime_outsideFixBike"] ?? 0,
       collectBike: tasks["lime_collectBike"] ?? 0,
@@ -212,11 +218,13 @@ const AddItemLimeScreen: React.FC = () => {
 
 const formatLabel = (key: string) => {
   const labels: Record<string, string> = {
+    deployTroti: "Deploy Scooter",
     swapTroti: "Swap Scooter",
     outsideFixTroti: "Outside Fix Scooter",
     collectTroti: "Collect Scooter",
     rebalanceTroti: "Rebalance Scooter",
     missingTroti: "Missing Scooter",
+    deployBike: "Deploy Bike",
     swapBike: "Swap Bike",
     outsideFixBike: "Outside Fix Bike",
     collectBike: "Collect Bike",

@@ -13,14 +13,16 @@ type RootStackParamList = {
 const LimeCard: React.FC<{ disabled?: boolean }> = ({ disabled = false }) => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [expanded, setExpanded] = useState(false);
-  const animatedHeight = new Animated.Value(expanded ? 435 : 80);
+  const animatedHeight = new Animated.Value(expanded ? 505 : 80);
 
   const [data, setData] = useState({
+    deployTroti: 0,
     swapTroti: 0,
     outsideFixTroti: 0,
     collectTroti: 0,
     rebalanceTroti: 0,
     missingTroti: 0,
+    deployBike: 0,
     swapBike: 0,
     outsideFixBike: 0,
     collectBike: 0,
@@ -75,7 +77,7 @@ const LimeCard: React.FC<{ disabled?: boolean }> = ({ disabled = false }) => {
   const toggleExpand = () => {
     setExpanded(!expanded);
     Animated.timing(animatedHeight, {
-      toValue: expanded ? 80 : 435,
+      toValue: expanded ? 80 : 505,
       duration: 300,
       useNativeDriver: false,
     }).start();
@@ -120,11 +122,13 @@ const LimeCard: React.FC<{ disabled?: boolean }> = ({ disabled = false }) => {
 
 const formatLabel = (key: string) => {
   const labels: Record<string, string> = {
+    deployTroti: "Deploy Troti",
     swapTroti: "Swap Troti",
     outsideFixTroti: "Outside Fix Troti",
     collectTroti: "Collect Troti",
     rebalanceTroti: "Rebalance Troti",
     missingTroti: "Missing Troti",
+    deployBike: "Deploy Bike",
     swapBike: "Swap Bike",
     outsideFixBike: "Outside Fix Bike",
     collectBike: "Collect Bike",

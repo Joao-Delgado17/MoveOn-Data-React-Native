@@ -132,6 +132,8 @@ const exportToGoogleSheets = async (imageDriveLinks: string[], tasks: Record<str
       "Outside Fix Lime": getTaskValue("lime_outsideFixTroti"),
       "Swap Bike Lime": getTaskValue("lime_swapBike"),
       "Outside Fix Bike Lime": getTaskValue("lime_outsideFixBike"),
+      "Deploy Lime": getTaskValue("lime_deployTroti"),
+      "Deploy Bike Lime": getTaskValue("lime_deployBike"),
     };
 
     console.log("📡 Enviando dados do turno:", JSON.stringify(turnoPayload, null, 2));
