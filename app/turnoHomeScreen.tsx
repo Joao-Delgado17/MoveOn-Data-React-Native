@@ -94,6 +94,9 @@ const TurnoHomeScreen: React.FC = () => {
   const [isLoadingWarehouse, setIsLoadingWarehouse] = useState(false);
   const [isKmFocused, setIsKmFocused] = useState(false);
   const [isNotesFocused, setIsNotesFocused] = useState(false);
+  const [numEncomendasInicial, setNumEncomendasInicial] = useState<number | null>(null);
+  const [numEncomendasFinal, setNumEncomendasFinal] = useState<number | null>(null);
+  const [numEncomendasEntregues, setNumEncomendasEntregues] = useState<number | null>(null);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -191,22 +194,103 @@ const TurnoHomeScreen: React.FC = () => {
       setIsLoadingWarehouse(true); // 🚀 Ativar loading
   
       const tipoRegistro = isWarehouseActive ? "Chegada" : "Saída";
-      await exportWarehouseLog(tipoRegistro); // 🚀 Chamar a função do script
   
-      // 🚀 Atualiza o estado no AsyncStorage
-      if (!isWarehouseActive) {
-        await AsyncStorage.setItem("warehouseStartTime", Date.now().toString());
-        await AsyncStorage.setItem("isWarehouseActive", "true");
-        setIsWarehouseActive(true);
+      // 🚀 Registrar o número de encomendas na saída ou chegada
+      if (userType === "delivery") {
+        if (!isWarehouseActive) {
+          // 🚚 Saída do armazém: Pedir o número de encomendas iniciais
+          Alert.prompt(
+            "Número de Encomendas",
+            "Insira o número de encomendas com que está a sair do armazém:",
+            [
+              {
+                text: "Cancelar",
+                style: "cancel",
+                onPress: () => setIsLoadingWarehouse(false),
+              },
+              {
+                text: "Confirmar",
+                onPress: async (text) => {
+                  const numInicial = parseInt(text || "0", 10);
+                  if (!isNaN(numInicial) && numInicial >= 0) {
+                    setNumEncomendasInicial(numInicial);
+                    await AsyncStorage.setItem("numEncomendasInicial", numInicial.toString());
+                    await exportWarehouseLog(tipoRegistro); // 🚀 Registrar saída
+                    await AsyncStorage.setItem("warehouseStartTime", Date.now().toString());
+                    await AsyncStorage.setItem("isWarehouseActive", "true");
+                    setIsWarehouseActive(true);
+                  } else {
+                    Alert.alert("Erro", "Por favor, insira um número válido.");
+                  }
+                },
+              },
+            ],
+            "plain-text"
+          );
+          return; // 🚀 Interrompe aqui para aguardar o input
+        } else {
+          // 🚚 Chegada ao armazém: Pedir o número de encomendas finais
+          Alert.prompt(
+            "Número de Encomendas",
+            "Insira o número de encomendas com que chegou ao armazém:",
+            [
+              {
+                text: "Cancelar",
+                style: "cancel",
+                onPress: () => setIsLoadingWarehouse(false),
+              },
+              {
+                text: "Confirmar",
+                onPress: async (text) => {
+                  const numFinal = parseInt(text || "0", 10);
+                  if (!isNaN(numFinal) && numFinal >= 0) {
+                    setNumEncomendasFinal(numFinal);
+                    await AsyncStorage.setItem("numEncomendasFinal", numFinal.toString());
+  
+                    // 🚀 Calcular encomendas entregues
+                    if (numEncomendasInicial !== null) {
+                      const entregues = numEncomendasInicial - numFinal;
+                      setNumEncomendasEntregues(entregues >= 0 ? entregues : null);
+                      await AsyncStorage.setItem("numEncomendasEntregues", entregues.toString());
+                    }
+  
+                    await exportWarehouseLog(tipoRegistro); // 🚀 Registrar chegada
+                    const warehouseStartTime = parseInt((await AsyncStorage.getItem("warehouseStartTime")) || "0");
+                    const elapsed = Date.now() - warehouseStartTime;
+                    await AsyncStorage.multiSet([
+                      ["warehouseEndTime", Date.now().toString()],
+                      ["warehouseElapsedTime", elapsed.toString()],
+                      ["isWarehouseActive", "false"],
+                    ]);
+                    setIsWarehouseActive(false);
+                  } else {
+                    Alert.alert("Erro", "Por favor, insira um número válido.");
+                  }
+                },
+              },
+            ],
+            "plain-text"
+          );
+          return; // 🚀 Interrompe aqui para aguardar o input
+        }
       } else {
-        const warehouseStartTime = parseInt((await AsyncStorage.getItem("warehouseStartTime")) || "0");
-        const elapsed = Date.now() - warehouseStartTime;
-        await AsyncStorage.multiSet([
-          ["warehouseEndTime", Date.now().toString()],
-          ["warehouseElapsedTime", elapsed.toString()],
-          ["isWarehouseActive", "false"],
-        ]);
-        setIsWarehouseActive(false);
+        // 🚀 Para outros tipos de usuários, apenas registrar a ação
+        await exportWarehouseLog(tipoRegistro);
+  
+        if (!isWarehouseActive) {
+          await AsyncStorage.setItem("warehouseStartTime", Date.now().toString());
+          await AsyncStorage.setItem("isWarehouseActive", "true");
+          setIsWarehouseActive(true);
+        } else {
+          const warehouseStartTime = parseInt((await AsyncStorage.getItem("warehouseStartTime")) || "0");
+          const elapsed = Date.now() - warehouseStartTime;
+          await AsyncStorage.multiSet([
+            ["warehouseEndTime", Date.now().toString()],
+            ["warehouseElapsedTime", elapsed.toString()],
+            ["isWarehouseActive", "false"],
+          ]);
+          setIsWarehouseActive(false);
+        }
       }
     } catch (error) {
       Alert.alert("Erro", "Não foi possível registrar a ação.");
@@ -334,8 +418,8 @@ const validateForm = () => {
           return false;
       }
 
-      if (kmPercorridos > 250) {
-          Alert.alert("⚠️ Erro", "O percurso não pode ser maior que 250km. Verifique os valores.");
+      if (kmPercorridos > 500) {
+          Alert.alert("⚠️ Erro", "O percurso não pode ser maior que 500km. Verifique os valores.");
           return false;
       }
   }
@@ -440,7 +524,6 @@ const PhotoGrid = () => (
         ) : city === "Lisboa" ? (
           <>
             <LimeCard disabled={!isWarehouseActive} />
-            <RidemoviCard disabled={!isWarehouseActive} />
             <BirdCard disabled={!isWarehouseActive} />
             <BoltCard disabled={!isWarehouseActive} />
           </>

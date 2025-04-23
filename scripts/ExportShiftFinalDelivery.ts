@@ -1,6 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { GOOGLE_SHEETS_API_URL } from "../api"; // Ajuste o caminho relativo conforme necessário
-
+import { GOOGLE_SHEETS_API_URL_v89 } from "../api"; // Ajuste o caminho relativo conforme necessário
 
 const exportDeliveriesToGoogleSheets = async (imageDriveLinks: string[]) => {
   try {
@@ -64,6 +63,11 @@ const exportDeliveriesToGoogleSheets = async (imageDriveLinks: string[]) => {
     const savedTasks = storedTasks ? JSON.parse(storedTasks) : {};
     const totalEntregas = savedTasks["delivery_entregas"] ?? 0; // 🔥 Única tarefa para entregadores
 
+    // 📌 Recuperar os dados de encomendas
+    const numEncomendasInicial = parseInt((await AsyncStorage.getItem("numEncomendasInicial")) || "0", 10);
+    const numEncomendasFinal = parseInt((await AsyncStorage.getItem("numEncomendasFinal")) || "0", 10);
+    const numEncomendasEntregues = numEncomendasInicial - numEncomendasFinal;
+
     // 🛠️ **DADOS FORMATADOS PARA ENVIO**
     const deliveryPayload = {
       username,
@@ -82,12 +86,16 @@ const exportDeliveriesToGoogleSheets = async (imageDriveLinks: string[]) => {
       warehouseElapsedTime,
       imageDriveLinks: imageLinksString,
       totalEntregas,
+      // 🔥 Adicionando os dados de encomendas no final
+      numEncomendasInicial,
+      numEncomendasFinal,
+      numEncomendasEntregues: numEncomendasEntregues >= 0 ? numEncomendasEntregues : "N/A",
     };
 
     console.log("📡 Enviando dados de entregas:", JSON.stringify(deliveryPayload, null, 2));
 
     // 📌 Envia os dados para a API do Google Sheets
-    const response = await fetch("https://script.google.com/macros/s/AKfycbzG2hfnThZDRqrDsoa0BiWowTeroQJkqExwVVDpKfwWWm66SPGBq48mCHM4gxKrvGR0/exec", {
+    const response = await fetch(GOOGLE_SHEETS_API_URL_v89, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(deliveryPayload),

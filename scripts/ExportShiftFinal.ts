@@ -145,8 +145,6 @@ const exportToGoogleSheets = async (imageDriveLinks: string[], tasks: Record<str
       body: JSON.stringify(turnoPayload),
     });
 
-    console.log("Será que vai executar isto?");
-
     const turnoData = await turnoResponse.json();
     console.log("📥 Resposta da API para Turno:", turnoData);
 
