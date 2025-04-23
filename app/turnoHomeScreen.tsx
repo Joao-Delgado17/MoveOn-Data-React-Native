@@ -27,6 +27,7 @@ import exportMechanicToGoogleSheets from "../scripts/ExportShiftFinalMechanic";
 import uploadToFirebase from "../scripts/uploadImagesToGoogleDrive";
 import { exportWarehouseLog } from "../scripts/ExportWarehouseButtonLog";
 import { exportShiftLog } from "../scripts/ExportShiftButtonLog";
+import Dialog from "react-native-dialog";
 
 // Components
 import LimeCard from "../components/operation_cards/LimeCard";
@@ -97,6 +98,26 @@ const TurnoHomeScreen: React.FC = () => {
   const [numEncomendasInicial, setNumEncomendasInicial] = useState<number | null>(null);
   const [numEncomendasFinal, setNumEncomendasFinal] = useState<number | null>(null);
   const [numEncomendasEntregues, setNumEncomendasEntregues] = useState<number | null>(null);
+  const [isDialogVisible, setIsDialogVisible] = useState(false);
+  const [dialogValue, setDialogValue] = useState("");
+  const [dialogTitle, setDialogTitle] = useState("");
+  const [dialogMessage, setDialogMessage] = useState("");
+  const [onDialogConfirm, setOnDialogConfirm] = useState<(value: string) => void | null>(null);
+
+  const showDialog = (title: string, message: string, onConfirmCallback: (value: string) => void) => {
+    setDialogTitle(title);
+    setDialogMessage(message);
+    setOnDialogConfirm(() => onConfirmCallback);
+    setIsDialogVisible(true);
+  };
+
+  const handleDialogConfirm = () => {
+    if (onDialogConfirm) {
+      onDialogConfirm(dialogValue);
+    }
+    setIsDialogVisible(false);
+    setDialogValue("");
+  };
 
   useFocusEffect(
     React.useCallback(() => {
@@ -199,77 +220,55 @@ const TurnoHomeScreen: React.FC = () => {
       if (userType === "delivery") {
         if (!isWarehouseActive) {
           // 🚚 Saída do armazém: Pedir o número de encomendas iniciais
-          Alert.prompt(
+          showDialog(
             "Número de Encomendas",
             "Insira o número de encomendas com que está a sair do armazém:",
-            [
-              {
-                text: "Cancelar",
-                style: "cancel",
-                onPress: () => setIsLoadingWarehouse(false),
-              },
-              {
-                text: "Confirmar",
-                onPress: async (text) => {
-                  const numInicial = parseInt(text || "0", 10);
-                  if (!isNaN(numInicial) && numInicial >= 0) {
-                    setNumEncomendasInicial(numInicial);
-                    await AsyncStorage.setItem("numEncomendasInicial", numInicial.toString());
-                    await exportWarehouseLog(tipoRegistro); // 🚀 Registrar saída
-                    await AsyncStorage.setItem("warehouseStartTime", Date.now().toString());
-                    await AsyncStorage.setItem("isWarehouseActive", "true");
-                    setIsWarehouseActive(true);
-                  } else {
-                    Alert.alert("Erro", "Por favor, insira um número válido.");
-                  }
-                },
-              },
-            ],
-            "plain-text"
+            async (value) => {
+              const numInicial = parseInt(value, 10);
+              if (!isNaN(numInicial) && numInicial >= 0) {
+                setNumEncomendasInicial(numInicial);
+                await AsyncStorage.setItem("numEncomendasInicial", numInicial.toString());
+                await exportWarehouseLog(tipoRegistro); // 🚀 Registrar saída
+                await AsyncStorage.setItem("warehouseStartTime", Date.now().toString());
+                await AsyncStorage.setItem("isWarehouseActive", "true");
+                setIsWarehouseActive(true);
+              } else {
+                Alert.alert("Erro", "Por favor, insira um número válido.");
+              }
+            }
           );
           return; // 🚀 Interrompe aqui para aguardar o input
         } else {
           // 🚚 Chegada ao armazém: Pedir o número de encomendas finais
-          Alert.prompt(
+          showDialog(
             "Número de Encomendas",
             "Insira o número de encomendas com que chegou ao armazém:",
-            [
-              {
-                text: "Cancelar",
-                style: "cancel",
-                onPress: () => setIsLoadingWarehouse(false),
-              },
-              {
-                text: "Confirmar",
-                onPress: async (text) => {
-                  const numFinal = parseInt(text || "0", 10);
-                  if (!isNaN(numFinal) && numFinal >= 0) {
-                    setNumEncomendasFinal(numFinal);
-                    await AsyncStorage.setItem("numEncomendasFinal", numFinal.toString());
+            async (value) => {
+              const numFinal = parseInt(value, 10);
+              if (!isNaN(numFinal) && numFinal >= 0) {
+                setNumEncomendasFinal(numFinal);
+                await AsyncStorage.setItem("numEncomendasFinal", numFinal.toString());
   
-                    // 🚀 Calcular encomendas entregues
-                    if (numEncomendasInicial !== null) {
-                      const entregues = numEncomendasInicial - numFinal;
-                      setNumEncomendasEntregues(entregues >= 0 ? entregues : null);
-                      await AsyncStorage.setItem("numEncomendasEntregues", entregues.toString());
-                    }
+                // 🚀 Calcular encomendas entregues
+                if (numEncomendasInicial !== null) {
+                  const entregues = numEncomendasInicial - numFinal;
+                  setNumEncomendasEntregues(entregues >= 0 ? entregues : null);
+                  await AsyncStorage.setItem("numEncomendasEntregues", entregues.toString());
+                }
   
-                    await exportWarehouseLog(tipoRegistro); // 🚀 Registrar chegada
-                    const warehouseStartTime = parseInt((await AsyncStorage.getItem("warehouseStartTime")) || "0");
-                    const elapsed = Date.now() - warehouseStartTime;
-                    await AsyncStorage.multiSet([
-                      ["warehouseEndTime", Date.now().toString()],
-                      ["warehouseElapsedTime", elapsed.toString()],
-                      ["isWarehouseActive", "false"],
-                    ]);
-                    setIsWarehouseActive(false);
-                  } else {
-                    Alert.alert("Erro", "Por favor, insira um número válido.");
-                  }
-                },
-              },
-            ],
-            "plain-text"
+                await exportWarehouseLog(tipoRegistro); // 🚀 Registrar chegada
+                const warehouseStartTime = parseInt((await AsyncStorage.getItem("warehouseStartTime")) || "0");
+                const elapsed = Date.now() - warehouseStartTime;
+                await AsyncStorage.multiSet([
+                  ["warehouseEndTime", Date.now().toString()],
+                  ["warehouseElapsedTime", elapsed.toString()],
+                  ["isWarehouseActive", "false"],
+                ]);
+                setIsWarehouseActive(false);
+              } else {
+                Alert.alert("Erro", "Por favor, insira um número válido.");
+              }
+            }
           );
           return; // 🚀 Interrompe aqui para aguardar o input
         }
@@ -676,6 +675,20 @@ const PhotoGrid = () => (
           </View>
         </View>
       </Modal>
+
+      {/* Dialog para entrada de texto */}
+      <Dialog.Container visible={isDialogVisible}>
+        <Dialog.Title>{dialogTitle}</Dialog.Title>
+        <Dialog.Description>{dialogMessage}</Dialog.Description>
+        <Dialog.Input
+          placeholder="Digite aqui"
+          keyboardType="numeric"
+          value={dialogValue}
+          onChangeText={setDialogValue}
+        />
+        <Dialog.Button label="Cancelar" onPress={() => setIsDialogVisible(false)} />
+        <Dialog.Button label="Confirmar" onPress={handleDialogConfirm} />
+      </Dialog.Container>
     </View>
   );
 };
