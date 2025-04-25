@@ -6,7 +6,7 @@ import * as Location from "expo-location";
 import { LinearGradient } from "expo-linear-gradient"; // Gradiente de fundo
 
 // 🔗 URL da API do Google Sheets
-const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbwQzd3FoSZfJeiW2ifmRQV8UeFXuOEx1gzXQkulQLAfNgmmF1PsQXBig2I7z-XkaYZR/exec";
+const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbwoyiWWxn95qvS1xF2PLsZGzWywL-z0Qh0F5m8LCKRd-qmXR8KtxZ8TqwrclYbAj0IV/exec";
 
 const AddItemBirdScreen: React.FC = () => {
   const navigation = useNavigation();
