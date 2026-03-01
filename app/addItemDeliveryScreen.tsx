@@ -1,47 +1,57 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Alert, ActivityIndicator } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
+  ScrollView,
+  Alert,
+  ActivityIndicator,
+  Keyboard,
+  TouchableWithoutFeedback,
+} from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Location from "expo-location";
 import { LinearGradient } from "expo-linear-gradient";
+import { appendDeliveryTurnLog } from "../components/operation_cards/DeliveryTurnLog"; // ✅ ajusta o path se necessário
 
-const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbwoyiWWxn95qvS1xF2PLsZGzWywL-z0Qh0F5m8LCKRd-qmXR8KtxZ8TqwrclYbAj0IV/exec";
+const GOOGLE_SHEETS_API_URL =
+  "https://script.google.com/macros/s/AKfycbwoyiWWxn95qvS1xF2PLsZGzWywL-z0Qh0F5m8LCKRd-qmXR8KtxZ8TqwrclYbAj0IV/exec";
 
 const AddItemDeliveryScreen: React.FC = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const [isLoading, setIsLoading] = useState(false);
 
   const [currentValues, setCurrentValues] = useState({
     entregas: 0,
+    recolhas: 0,
   });
 
   const [adjustedCounts, setAdjustedCounts] = useState({
     entregas: 0,
+    recolhas: 0,
   });
 
   const loadCurrentValues = async () => {
     const storedTasks = await AsyncStorage.getItem("TASKS");
     const tasks = storedTasks ? JSON.parse(storedTasks) : {};
 
-    const updatedValues = {
+    setCurrentValues({
       entregas: tasks["delivery_entregas"] ?? 0,
-    };
-
-    console.log("📥 Valores reais carregados no AddItemLime:", updatedValues);
-    setCurrentValues(updatedValues);
+      recolhas: tasks["delivery_recolhas"] ?? 0,
+    });
   };
 
   useEffect(() => {
     loadCurrentValues();
-
-    // 🔹 Atualiza os valores sempre que a tela for focada novamente
     const unsubscribe = navigation.addListener("focus", loadCurrentValues);
     return unsubscribe;
   }, [navigation]);
 
-  // 🔹 Atualizar estado dos inputs
   const updateCount = (field: keyof typeof adjustedCounts, value: number) => {
-    setAdjustedCounts((prev) => ({ ...prev, [field]: value })); // Permite valores negativos
+    setAdjustedCounts((prev) => ({ ...prev, [field]: value }));
   };
 
   const getCurrentLocation = async () => {
@@ -57,8 +67,7 @@ const AddItemDeliveryScreen: React.FC = () => {
         latitude: location.coords.latitude,
         longitude: location.coords.longitude,
       };
-    } catch (error) {
-      console.error("Erro ao obter localização:", error);
+    } catch {
       Alert.alert("Erro", "Falha ao obter localização.");
       return null;
     }
@@ -66,59 +75,68 @@ const AddItemDeliveryScreen: React.FC = () => {
 
   const handleConfirm = async () => {
     if (isLoading) return;
+
+    const hasAnyDelta = Object.values(adjustedCounts).some((v) => v !== 0);
+    if (!hasAnyDelta) {
+      Alert.alert("Nada para registar", "Mete um valor em Entregas ou Recolhas.");
+      return;
+    }
+
     setIsLoading(true);
 
     const now = new Date();
-    const dateString = now.toLocaleDateString("pt-PT"); // 📅 "05/01/2025"
-    const timeString = now.toLocaleTimeString("pt-PT"); // ⏰ "06:05:13"
+    const dateString = now.toLocaleDateString("pt-PT");
+    const timeString = now.toLocaleTimeString("pt-PT");
 
     const username = (await AsyncStorage.getItem("USERNAME")) || "Desconhecido";
     const userCity = (await AsyncStorage.getItem("CITY")) || "Desconhecido";
 
     const updatedValues = { ...currentValues };
+
     Object.entries(adjustedCounts).forEach(([key, value]) => {
-      const field = key as keyof typeof updatedValues; // 🔹 Type assertion
-      const newValue = updatedValues[field] + value;
-      updatedValues[field] = Math.max(0, newValue);
+      const field = key as keyof typeof updatedValues;
+      updatedValues[field] = Math.max(0, updatedValues[field] + value);
     });
 
-    await AsyncStorage.setItem("delivery_Entregas", updatedValues.entregas.toString());
-
-    // Salvar tasks no objeto único
+    // guardar no TASKS
     const storedTasks = await AsyncStorage.getItem("TASKS");
     const tasks = storedTasks ? JSON.parse(storedTasks) : {};
-
-    // 🚨 Usando a mesma chave que no DeliveryCard
-    tasks.delivery_entregas = updatedValues.entregas; 
-
+    tasks.delivery_entregas = updatedValues.entregas;
+    tasks.delivery_recolhas = updatedValues.recolhas;
     await AsyncStorage.setItem("TASKS", JSON.stringify(tasks));
 
+    // ✅ NOVO: também entra no histórico deste turno (mesmo que metas +10, fica registado)
+    for (const [key, value] of Object.entries(adjustedCounts)) {
+      if (!value) continue;
+
+      const taskName = key === "recolhas" ? "Recolhas" : "Entregas";
+      await appendDeliveryTurnLog(taskName, value);
+    }
+
+    // logs remotos (GPS)
     const currentLocation = await getCurrentLocation();
     if (!currentLocation) {
-      Alert.alert("Erro", "Não foi possível obter a localização.");
       setIsLoading(false);
       return;
     }
 
     const logs = {
-      logs: [
-        {
+      logs: Object.entries(adjustedCounts)
+        .filter(([_, value]) => value !== 0)
+        .map(([key, value]) => ({
           Utilizador: username,
-          Data: dateString,       // 📅 Nova coluna Data
-          Hora: timeString,       // ⏰ Nova coluna Hora
+          Data: dateString,
+          Hora: timeString,
           Cidade: userCity,
           Operador: "Delivery",
-          Tarefa: "Entregas",
-          Quantidade: adjustedCounts.entregas,
+          Tarefa: key === "recolhas" ? "Recolhas" : "Entregas",
+          Quantidade: value,
           Latitude: currentLocation.latitude,
           Longitude: currentLocation.longitude,
-        },
-      ],
+        })),
     };
 
     try {
-      console.log("📤 Enviando logs corrigidos:", JSON.stringify(logs));
-
       const response = await fetch(GOOGLE_SHEETS_API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -126,15 +144,13 @@ const AddItemDeliveryScreen: React.FC = () => {
       });
 
       const result = await response.json();
-      console.log("📥 Resposta da API:", result);
 
       if (result.success) {
         navigation.goBack();
       } else {
         Alert.alert("Erro", "A API rejeitou os dados. Verifica os logs.");
       }
-    } catch (error) {
-      console.error("Erro ao enviar para Google Sheets:", error);
+    } catch {
       Alert.alert("Erro", "Não foi possível registrar a tarefa.");
     }
 
@@ -142,55 +158,65 @@ const AddItemDeliveryScreen: React.FC = () => {
   };
 
   return (
-    <LinearGradient colors={["#1A1A1A", "#2A2A2A"]} style={styles.container}>
-      <Text style={styles.title}>Tarefas Delivery</Text>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <LinearGradient colors={["#1A1A1A", "#2A2A2A"]} style={styles.container}>
+        <Text style={styles.title}>Tarefas Delivery</Text>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {Object.entries(adjustedCounts).map(([key, value]) => (
-          <View key={key} style={styles.card}>
-            <Text style={styles.label}>{formatLabel(key)}</Text>
-            <Text style={styles.note}>Número atual no cartão: {currentValues[key as keyof typeof currentValues]}</Text>
-            <View style={styles.counterContainer}>
-              <TouchableOpacity style={styles.button} onPress={() => updateCount(key as keyof typeof adjustedCounts, value - 1)}>
-                <Text style={styles.buttonText}>-</Text>
-              </TouchableOpacity>
-              <TextInput 
-                style={styles.input} 
-                value={String(value)} 
-                keyboardType="numeric" 
-                editable={false}
-              />
-              <TouchableOpacity style={styles.button} onPress={() => updateCount(key as keyof typeof adjustedCounts, value + 1)}>
-                <Text style={styles.buttonText}>+</Text>
-              </TouchableOpacity>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {Object.entries(adjustedCounts).map(([key, value]) => (
+            <View key={key} style={styles.card}>
+              <Text style={styles.label}>{key === "recolhas" ? "Recolhas" : "Entregas"}</Text>
+              <Text style={styles.note}>
+                Número atual no cartão: {currentValues[key as keyof typeof currentValues]}
+              </Text>
+
+              <View style={styles.counterContainer}>
+                <TouchableOpacity
+                  style={styles.button}
+                  onPress={() => updateCount(key as keyof typeof adjustedCounts, value - 1)}
+                  disabled={isLoading}
+                >
+                  <Text style={styles.buttonText}>-</Text>
+                </TouchableOpacity>
+
+                <TextInput
+                  style={styles.input}
+                  value={String(value)}
+                  keyboardType="numeric"
+                  editable={!isLoading}
+                  onChangeText={(txt) => {
+                    if (txt.trim() === "") {
+                      updateCount(key as keyof typeof adjustedCounts, 0);
+                      return;
+                    }
+                    const cleaned = txt.replace(/[^0-9-]/g, "");
+                    const n = parseInt(cleaned, 10);
+                    updateCount(key as keyof typeof adjustedCounts, isNaN(n) ? 0 : n);
+                  }}
+                />
+
+                <TouchableOpacity
+                  style={styles.button}
+                  onPress={() => updateCount(key as keyof typeof adjustedCounts, value + 1)}
+                  disabled={isLoading}
+                >
+                  <Text style={styles.buttonText}>+</Text>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
-        ))}
-      </ScrollView>
+          ))}
+        </ScrollView>
 
-      <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm} disabled={isLoading}>
-        {isLoading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.confirmButtonText}>Confirmar</Text>}
-      </TouchableOpacity>
-    </LinearGradient>
+        <TouchableOpacity style={styles.confirmButton} onPress={handleConfirm} disabled={isLoading}>
+          {isLoading ? <ActivityIndicator color="#FFF" /> : <Text style={styles.confirmButtonText}>Confirmar</Text>}
+        </TouchableOpacity>
+      </LinearGradient>
+    </TouchableWithoutFeedback>
   );
-};
-
-const formatLabel = (key: string) => {
-
-  const spaced = key.replace(/([A-Z])/g, ' $1'); // Passo 1
-  const words = spaced.split(' ');
-  const pascalCased = words.map(
-    w => w.charAt(0).toUpperCase() + w.slice(1)
-  );
-  return pascalCased.join(' ').trim(); // "Rebalance Virtual"
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    paddingHorizontal: 20,
-    paddingTop: 70,
-  },
+  container: { flex: 1, paddingHorizontal: 20, paddingTop: 70 },
   title: {
     fontSize: 24,
     fontWeight: "bold",
@@ -201,10 +227,7 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
   },
-  scrollContent: {
-    flexGrow: 1,
-    paddingBottom: 80,
-  },
+  scrollContent: { flexGrow: 1, paddingBottom: 90 },
   card: {
     backgroundColor: "#2A2A2A",
     borderRadius: 12,
@@ -216,22 +239,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 6,
   },
-  label: {
-    fontSize: 18,
-    color: "#FFF",
-    fontWeight: "bold",
-    marginBottom: 8,
-  },
-  note: {
-    fontSize: 14,
-    color: "#B0BEC5",
-    marginBottom: 12,
-  },
-  counterContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
+  label: { fontSize: 18, color: "#FFF", fontWeight: "bold", marginBottom: 8 },
+  note: { fontSize: 14, color: "#B0BEC5", marginBottom: 12 },
+  counterContainer: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   button: {
     backgroundColor: "#424242",
     borderRadius: 10,
@@ -239,18 +249,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     elevation: 3,
   },
-  buttonText: {
-    fontSize: 20,
-    color: "#FFF",
-    fontWeight: "bold",
-  },
+  buttonText: { fontSize: 20, color: "#FFF", fontWeight: "bold" },
   input: {
     fontSize: 18,
     color: "#FFF",
     textAlign: "center",
-    minWidth: 60,
+    minWidth: 90,
     backgroundColor: "#424242",
-    paddingVertical: 8,
+    paddingVertical: 10,
     borderRadius: 8,
     marginHorizontal: 10,
   },
@@ -265,11 +271,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     elevation: 5,
   },
-  confirmButtonText: {
-    color: "#FFF",
-    fontSize: 20,
-    fontWeight: "bold",
-  },
+  confirmButtonText: { color: "#FFF", fontSize: 20, fontWeight: "bold" },
 });
 
 export default AddItemDeliveryScreen;

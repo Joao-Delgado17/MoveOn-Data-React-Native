@@ -40,7 +40,9 @@ import BirdCard from "../components/operation_cards/BirdCard";
 import BoltCard from "../components/operation_cards/BoltCard";
 import LinkCard from "../components/operation_cards/LinkCard";
 import DeliveryCard from "../components/operation_cards/DeliveryCard";
+import DeliveryTurnLog from "../components/operation_cards/DeliveryTurnLog";
 import MechanicCard from "@/components/operation_cards/MechanicCard";
+
 
 const { width } = Dimensions.get("window");
 
@@ -273,8 +275,8 @@ const TurnoHomeScreen: React.FC = () => {
           return;
         } else {
           showDialog(
-            "Número de Encomendas",
-            "Insira o número de encomendas com que chegou ao armazém:",
+            "Número de Incidências",
+            "Insira o número de incidências com que chegou ao armazém:",
             async (value) => {
               const numFinal = parseInt(value, 10);
               if (!isNaN(numFinal) && numFinal >= 0) {
@@ -431,6 +433,8 @@ const TurnoHomeScreen: React.FC = () => {
         "imageDriveLinks",
       ]);
 
+      await AsyncStorage.removeItem("DELIVERY_TURN_LOG");
+
       setModalVisible(false);
       setTimeout(
         () =>
@@ -580,7 +584,10 @@ const TurnoHomeScreen: React.FC = () => {
         {city === "Canarias" ? (
           <LinkCard disabled={!isWarehouseActive} />
         ) : userType === "delivery" ? (
-          <DeliveryCard disabled={!isWarehouseActive} />
+          <>
+            <DeliveryCard disabled={!isWarehouseActive} />
+            <DeliveryTurnLog />
+          </>
         ) : userType === "mechanic" ? (
           <MechanicCard disabled={!isWarehouseActive} />
         ) : city === "Lisboa" ? (

@@ -13,8 +13,6 @@ const exportDeliveriesToGoogleSheets = async (imageDriveLinks: string[]) => {
     const notes = (await AsyncStorage.getItem("notes")) || "Sem notas";
     const startTimeStr = (await AsyncStorage.getItem("startTime")) || "";
     const endTimeStr = Date.now().toString();
-    const startDateStr = (await AsyncStorage.getItem("startTime")) || "";
-    const endDateStr = Date.now().toString();
     const carrinha = (await AsyncStorage.getItem("carrinha")) || "N/A";
 
     const warehouseStartTimeStr = (await AsyncStorage.getItem("warehouseStartTime")) || "0";
@@ -33,7 +31,6 @@ const exportDeliveriesToGoogleSheets = async (imageDriveLinks: string[]) => {
       return date.toLocaleTimeString("pt-PT", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
     };
 
-    // 📌 Separar corretamente Data e Hora
     const dataInicio = formatDate(startTimeStr);
     const dataFim = formatDate(endTimeStr);
     const horaInicio = formatTime(startTimeStr);
@@ -58,10 +55,11 @@ const exportDeliveriesToGoogleSheets = async (imageDriveLinks: string[]) => {
     // 📌 Links das imagens
     const imageLinksString = imageDriveLinks.length > 0 ? imageDriveLinks.join("\n") : "Sem imagens";
 
-    // 📌 Recuperar o total de entregas feitas
+    // 📌 Recuperar totais feitos (Entregas + Recolhas)
     const storedTasks = await AsyncStorage.getItem("TASKS");
     const savedTasks = storedTasks ? JSON.parse(storedTasks) : {};
-    const totalEntregas = savedTasks["delivery_entregas"] ?? 0; // 🔥 Única tarefa para entregadores
+    const totalEntregas = savedTasks["delivery_entregas"] ?? 0;
+    const totalRecolhas = savedTasks["delivery_recolhas"] ?? 0;
 
     // 📌 Recuperar os dados de encomendas
     const numEncomendasInicial = parseInt((await AsyncStorage.getItem("numEncomendasInicial")) || "0", 10);
@@ -72,10 +70,10 @@ const exportDeliveriesToGoogleSheets = async (imageDriveLinks: string[]) => {
     const deliveryPayload = {
       username,
       city,
-      dataInicio: startDateStr,
+      dataInicio,
       horaInicio,
       horaFim,
-      dataFim: endDateStr,
+      dataFim,
       duration,
       carrinha,
       kmInicial,
@@ -85,8 +83,10 @@ const exportDeliveriesToGoogleSheets = async (imageDriveLinks: string[]) => {
       warehouseEnd,
       warehouseElapsedTime,
       imageDriveLinks: imageLinksString,
+
       totalEntregas,
-      // 🔥 Adicionando os dados de encomendas no final
+      totalRecolhas, // ✅ NOVO
+
       numEncomendasInicial,
       numEncomendasFinal,
       numEncomendasEntregues: numEncomendasEntregues >= 0 ? numEncomendasEntregues : "N/A",
