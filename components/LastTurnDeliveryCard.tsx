@@ -3,6 +3,8 @@
 // ✅ Setas: esquerda à esquerda, mês no meio, direita à direita
 // ✅ Info ao lado direito do título (clean)
 // ✅ NOVO: não mostrar turnos do próprio dia (só aparecem no dia seguinte)
+// ✅ NOVO: "Visitas" = Entregas + Recolhas
+// ✅ NOVO: Visitas/h calculado com (Entregas + Recolhas)
 
 import React, { useEffect, useMemo, useState } from "react";
 import {
@@ -45,16 +47,17 @@ const colorIncidNumber = (inc: number) => {
   return COLORS.success;
 };
 
+// (mantém thresholds, mas agora para Visitas/h)
 const colorEphNumber = (eph: number) => {
   if (eph < 6.1) return COLORS.danger;
   if (eph < 7.0) return COLORS.warning;
   return COLORS.success;
 };
 
-const calcDeliveriesPerHour = (entregas: number, durationSeconds: number) => {
+const calcVisitsPerHour = (visitas: number, durationSeconds: number) => {
   const hours = durationSeconds > 0 ? durationSeconds / 3600 : 0;
   if (hours <= 0) return 0;
-  return entregas / hours;
+  return visitas / hours;
 };
 
 // ✅ parse "dd/MM/yyyy" (pt-PT)
@@ -143,7 +146,7 @@ const LastTurnDeliveryCard: React.FC<Props> = ({ username }) => {
 
       const history = Array.isArray(res.history) ? res.history : [];
 
-      // ✅ AQUI: filtra para não mostrar o turno do próprio dia
+      // ✅ filtra para não mostrar o turno do próprio dia
       const filtered = hideTodayShifts(history);
 
       setMonthLabel(res.monthLabel || "—");
@@ -157,28 +160,31 @@ const LastTurnDeliveryCard: React.FC<Props> = ({ username }) => {
   }, [username, monthOffset]);
 
   const monthTotals = useMemo(() => {
-    const totalEntregas = items.reduce(
-      (acc, it: any) => acc + (Number(it.entregas) || 0),
-      0
-    );
+    const totalVisitas = items.reduce((acc, it: any) => {
+      const entregas = Number(it.entregas) || 0;
+      const recolhas = Number(it.recolhas) || 0; // ✅ NOVO
+      return acc + entregas + recolhas;
+    }, 0);
+
     const totalIncid = items.reduce(
       (acc, it: any) => acc + (Number(it.incidencias) || 0),
       0
     );
+
     const totalSeconds = items.reduce(
       (acc, it: any) => acc + (Number(it.durationSeconds) || 0),
       0
     );
 
-    const eph = calcDeliveriesPerHour(totalEntregas, totalSeconds);
-    return { totalEntregas, totalIncid, eph };
+    const vph = calcVisitsPerHour(totalVisitas, totalSeconds);
+    return { totalVisitas, totalIncid, vph };
   }, [items]);
 
   const openInfo = () => {
     Alert.alert(
       "Regras de cor",
       [
-        "Entregas/h:",
+        "Visitas/h (Entregas + Recolhas):",
         "• Vermelho: < 6.1",
         "• Amarelo: 6.1 – 6.9",
         "• Verde: ≥ 7.0",
@@ -279,14 +285,14 @@ const LastTurnDeliveryCard: React.FC<Props> = ({ username }) => {
 
           <View style={styles.pillsRow}>
             <StatPill
-              label="Total entregas"
-              value={String(monthTotals.totalEntregas)}
+              label="Total visitas"
+              value={String(monthTotals.totalVisitas)}
               color={COLORS.secondary}
-              icon="local-shipping"
+              icon="place"
             />
             <StatPill
-              label="Entregas/h"
-              value={monthTotals.eph ? monthTotals.eph.toFixed(1) : "0.0"}
+              label="Visitas/h"
+              value={monthTotals.vph ? monthTotals.vph.toFixed(1) : "0.0"}
               color={COLORS.success}
               icon="speed"
             />
@@ -316,9 +322,12 @@ const LastTurnDeliveryCard: React.FC<Props> = ({ username }) => {
       {!loading &&
         items.map((s: any, idx) => {
           const entregas = Number(s.entregas) || 0;
+          const recolhas = Number(s.recolhas) || 0; // ✅ NOVO
+          const visitas = entregas + recolhas; // ✅ visitas = entregas + recolhas
+
           const incid = Number(s.incidencias) || 0;
           const durSec = Number(s.durationSeconds) || 0;
-          const eph = calcDeliveriesPerHour(entregas, durSec);
+          const vph = calcVisitsPerHour(visitas, durSec);
 
           return (
             <View key={`${s.date}-${idx}`} style={styles.card}>
@@ -328,15 +337,11 @@ const LastTurnDeliveryCard: React.FC<Props> = ({ username }) => {
                     <View
                       style={[styles.badge, { borderColor: COLORS.secondary }]}
                     >
-                      <Icon
-                        name="local-shipping"
-                        size={16}
-                        color={COLORS.secondary}
-                      />
+                      <Icon name="place" size={16} color={COLORS.secondary} />
                     </View>
-                    <Text style={styles.metricLabel}>Entregas</Text>
+                    <Text style={styles.metricLabel}>Visitas</Text>
                     <Text style={styles.metricValuePrimary}>
-                      {String(entregas)}
+                      {String(visitas)}
                     </Text>
                   </View>
 
@@ -344,14 +349,14 @@ const LastTurnDeliveryCard: React.FC<Props> = ({ username }) => {
                     <View style={[styles.badge, { borderColor: COLORS.success }]}>
                       <Icon name="speed" size={16} color={COLORS.success} />
                     </View>
-                    <Text style={styles.metricLabel}>Entregas/h</Text>
+                    <Text style={styles.metricLabel}>Visitas/h</Text>
                     <Text
                       style={[
                         styles.metricValue,
-                        { color: colorEphNumber(eph) },
+                        { color: colorEphNumber(vph) },
                       ]}
                     >
-                      {eph ? eph.toFixed(1) : "0.0"}
+                      {vph ? vph.toFixed(1) : "0.0"}
                     </Text>
                   </View>
 

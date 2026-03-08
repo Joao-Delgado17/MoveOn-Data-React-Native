@@ -4,6 +4,7 @@ export type DeliveryMonthShiftItem = {
   date: string;
   city: string;
   entregas: number;
+  recolhas: number;
   saida: number;
   incidencias: number;
   durationSeconds: number;
@@ -15,7 +16,7 @@ export type DeliveryMonthShiftsResponse = {
 };
 
 const BASE_URL =
-  "https://script.google.com/macros/s/AKfycbx8gkRzKjOe3amww6-xUF0IC7ZWQD88KYOIk4xubbulK9GVjrbPW6kNfucaFW26Xyt1/exec";
+  "https://script.google.com/macros/s/AKfycbyN3_T1Ef-a5kvVJGrIq_TRi8wWDcf0x_U1cepw8spOwBa_hWgaFUmkRUBYbjbFvsja/exec";
 
 const safeJsonParse = (text: string) => {
   try {

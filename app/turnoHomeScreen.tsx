@@ -391,12 +391,10 @@ const TurnoHomeScreen: React.FC = () => {
 
     try {
       const userType = (await AsyncStorage.getItem("USER_TYPE")) || "driver";
+      const selected = images.filter((img): img is string => img !== null);
+
       const imageLinks = (
-        await Promise.all(
-          images
-            .filter((img): img is string => img !== null)
-            .map(uploadToFirebase)
-        )
+        await Promise.all(selected.map((uri, idx) => uploadToFirebase(uri, idx)))
       ).filter((link): link is string => link !== null);
 
       if (userType !== "mechanic" && images.length !== 4) {

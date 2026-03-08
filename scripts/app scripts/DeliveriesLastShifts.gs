@@ -5,15 +5,18 @@ const SHEET_NAME = "Delivery";
 
 // A=1, B=2, ...
 const COL = {
-  user: 1,        // A Usuário (email)
-  city: 2,        // B Cidade
-  dateStart: 3,   // C Data Inicio
-  timeStart: 4,   // D Hora de Início
-  dateEnd: 6,     // F Data Fim (fallback sort)
-  dur: 7,         // G Duração (DURAÇÃO TOTAL DO TURNO)
-  deliveries: 16, // P Total de Entregas
-  encomIni: 17,   // Q Encomendas Inicial (saída)
-  incid: 18,      // R Incidências
+  user: 1,         // A Usuário (email)
+  city: 2,         // B Cidade
+  dateStart: 3,    // C Data Inicio
+  timeStart: 4,    // D Hora de Início
+  dateEnd: 6,      // F Data Fim (fallback sort)
+  dur: 7,          // G Duração (DURAÇÃO TOTAL DO TURNO)
+
+  deliveries: 16,  // P Total de Entregas
+
+  recolhas: 17,    // Q Recolhas (NOVA COLUNA)
+  encomIni: 18,    // R Encomendas Inicial (saída) (deslocou 1)
+  incid: 19,       // S Incidências (deslocou 1)
 };
 
 function doGet(e) {
@@ -105,8 +108,9 @@ function mapRow_(rowV, rowD) {
   const city = String(rowV[COL.city - 1] || rowD[COL.city - 1] || "").trim() || "—";
 
   const entregas = safeInt_(rowV[COL.deliveries - 1]);
-  const saida = safeInt_(rowV[COL.encomIni - 1]);
-  const incid = safeInt_(rowV[COL.incid - 1]);
+  const recolhas = safeInt_(rowV[COL.recolhas - 1]);   // ✅ Q
+  const saida = safeInt_(rowV[COL.encomIni - 1]);       // ✅ R
+  const incid = safeInt_(rowV[COL.incid - 1]);          // ✅ S
 
   // ✅ DURAÇÃO: ler SEMPRE do DISPLAY da coluna G
   const durDisplay = String(rowD[COL.dur - 1] || "").trim(); // ex: "09:16:00"
@@ -116,9 +120,10 @@ function mapRow_(rowV, rowD) {
     date: dateStr,
     city,
     entregas,
+    recolhas,
     saida,
     incidencias: incid,
-    durationSeconds, // usado no entregas/h
+    durationSeconds,
   };
 }
 
@@ -172,11 +177,9 @@ function safeInt_(v) {
 }
 
 function formatDatePT_(v, displayStr) {
-  // Prefer display "dd/MM/yyyy"
   const s = String(displayStr || "").trim();
   if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) return s;
 
-  // fallback date object
   if (Object.prototype.toString.call(v) === "[object Date]" && !isNaN(v.getTime())) {
     return Utilities.formatDate(v, Session.getScriptTimeZone(), "dd/MM/yyyy");
   }
@@ -217,7 +220,6 @@ function rowTimestamp_(rowV, rowD) {
     return new Date(d.getFullYear(), d.getMonth(), d.getDate(), h, m, s).getTime();
   }
 
-  // fallback
   const df = rowV[COL.dateEnd - 1];
   const num = Number(df);
   if (isFinite(num) && num > 1000000000) return num;
@@ -229,7 +231,6 @@ function rowTimestamp_(rowV, rowD) {
 
 function durationDisplayToSeconds_(displayStr) {
   const s = String(displayStr || "").trim();
-  // aceita "H:mm:ss", "HH:mm:ss", e também "H:mm"
   const m = s.match(/^(\d{1,3}):(\d{2})(?::(\d{2}))?$/);
   if (!m) return 0;
 
